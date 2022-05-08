@@ -7,3 +7,5 @@ source corona/bin/activate
 printf "\nInstalling dependencies...\n"
 pip install requests beautifulsoup4
 printf "Dependencies installed.\n"
+
+printf "\nDon't forget to run 'source corona/bin/activate' before running the script!\n"
