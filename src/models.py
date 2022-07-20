@@ -1,9 +1,5 @@
-import os
-
 import requests
 from bs4 import BeautifulSoup
-
-from helpers import get_cache_dir
 
 
 class CoronaModel:
@@ -32,20 +28,20 @@ class CoronaModel:
 
         return str(table_body)
 
-    def parse_raw_data(self, soup: BeautifulSoup) -> list[str]:
+    def parse_raw_data(self, content: str = None) -> list[str]:
         """Parses raw html table body for data.
 
         Parameters
         ----------
-        soup : BeautifulSoup
-            A BeautifulSoup object, assumed to be the body of the table.
+        content: str | None
+            A string that will be parsed for data.
 
         Returns
         -------
         list[str]
             A list of strings which contain the sanitised data of all available countries.
         """
-
+        soup = BeautifulSoup(content, "html.parser")
         countries = soup.find_all("tr")[7:]
 
         # Get content of each column
@@ -64,6 +60,31 @@ class CoronaModel:
                 clean_data.append(value)
 
             result.append(",".join(clean_data))
+
+        return result
+
+    def parse_clean_data(self, content: str = None, delimiter: str = "\n") -> list[tuple]:
+        r"""
+        Parses csv-like file for data.
+
+        Parameters
+        ----------
+        content: str | None
+            A string that will be parsed for data.
+
+        delimiter: str
+            The delimiter that will be used to split the data. Defaults to '\n'
+
+        Returns
+        -------
+        list[tuple]
+            A list of tuples which contain clean data of all available countries.
+        """
+        countries_data = content.split(delimiter)
+        result = []
+        for row_data in countries_data:
+            data_tuple = tuple(row_data.split(","))
+            result.append(data_tuple)
 
         return result
 
@@ -91,8 +112,4 @@ class CoronaModel:
 
 if __name__ == "__main__":
     corona = CoronaModel()
-    # corona.fetch_data()
-    with open(get_cache_dir("raw"), "r") as file:
-        raw_data = file.read()
-    soup = BeautifulSoup(raw_data, "html.parser")
-    corona.parse_raw_data(soup)
+    print(corona.parse_clean_data())
