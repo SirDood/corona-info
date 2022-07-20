@@ -28,12 +28,12 @@ class CoronaModel:
 
         return str(table_body)
 
-    def parse_raw_data(self, content: str = None) -> list[str]:
+    def parse_raw_data(self, html_content: str = None) -> list[tuple]:
         """Parses raw html table body for data.
 
         Parameters
         ----------
-        content: str | None
+        html_content: str | None
             A string that will be parsed for data.
 
         Returns
@@ -41,7 +41,7 @@ class CoronaModel:
         list[str]
             A list of strings which contain the sanitised data of all available countries.
         """
-        soup = BeautifulSoup(content, "html.parser")
+        soup = BeautifulSoup(html_content, "html.parser")
         countries = soup.find_all("tr")[7:]
 
         # Get content of each column
@@ -54,22 +54,22 @@ class CoronaModel:
                 value = data.text.replace(",", "").strip()
 
                 # For World, "No." is just nothing, so this is to assign it 0
-                if not i and not value:
+                if i == 0 and not value:
                     value = "0"
 
                 clean_data.append(value)
 
-            result.append(",".join(clean_data))
+            result.append(tuple(clean_data))
 
         return result
 
-    def parse_clean_data(self, content: str = None, delimiter: str = "\n") -> list[tuple]:
+    def parse_clean_data(self, csv_content: str = None, delimiter: str = "\n") -> list[tuple]:
         r"""
         Parses csv-like file for data.
 
         Parameters
         ----------
-        content: str | None
+        csv_content: str | None
             A string that will be parsed for data.
 
         delimiter: str
@@ -80,7 +80,7 @@ class CoronaModel:
         list[tuple]
             A list of tuples which contain clean data of all available countries.
         """
-        countries_data = content.split(delimiter)
+        countries_data = csv_content.split(delimiter)
         result = []
         for row_data in countries_data:
             data_tuple = tuple(row_data.split(","))
@@ -112,4 +112,3 @@ class CoronaModel:
 
 if __name__ == "__main__":
     corona = CoronaModel()
-    print(corona.parse_clean_data())
