@@ -1,16 +1,81 @@
+import os
+
 import requests
 from bs4 import BeautifulSoup
 
+from helpers import cache_file, get_cache_dir, get_file_content
+
 
 class CoronaModel:
-    def __init__(self):
-        pass
+    def __init__(self, *args: str):
+        """
+        The CoronaModel class represents data related to the Covid-19 virus. This data is scraped from
+        https://worldometers.info/coronavirus/.
+
+        Parameters
+        ----------
+        args: str
+            String arguments of countries that will be filtered.
+
+        Examples
+        --------
+
+        >>> corona = CoronaModel("USA", "World", "Spain", "Japan", "India")
+        """
+        self.countries = args
+
+    def get_data(self, no_cache: bool = False, get_all: bool = False) -> list[tuple]:
+        """
+        Gets data filtered based on the countries given in the constructor. For most cases, this should be the main
+        entrypoint for getting data.
+
+        Parameters
+        ----------
+        no_cache: bool
+            Bypasses retrieving data from cache and fetches new data if True. Defaults to False
+        get_all: bool
+            Bypasses filtering and retrieves data of all countries. Defaults to False
+
+        Returns
+        -------
+        list[tuple]
+            A list of tuples containing data of countries.
+
+        """
+        raw_data_path = get_cache_dir("raw")
+        clean_data_path = get_cache_dir("clean")
+
+        result = []
+        if no_cache or not os.path.exists(raw_data_path):
+            raw_data = self.fetch_data()
+            cache_file("raw", raw_data)
+
+            clean_data = self.parse_raw_data(raw_data)
+            # Convert the tuples in the list into strings
+            clean_data_to_str = [",".join(country_data) for country_data in clean_data]
+            cache_file("clean", "\n".join(clean_data_to_str))
+
+            result = clean_data[0:]
+
+        else:
+            if os.path.exists(clean_data_path):
+                clean_data = get_file_content(clean_data_path)
+                result = self.parse_clean_data(clean_data)
+
+            elif os.path.exists(raw_data_path):
+                raw_data = get_file_content(raw_data_path)
+                result = self.parse_raw_data(raw_data)
+
+        if not get_all:
+            result = filter(lambda country_data: country_data[1] in self.countries, result)
+            result = list(result)
+
+        return result
 
     def fetch_data(self) -> str:
-        """Fetches raw html data from `https://www.worldometers.info/coronavirus/`.
-
-        This function fetches the raw html data from `https://www.worldometers.info/coronavirus/` and 
-        parses it to get the table which shows data from the current date.
+        """
+        Fetches raw html data from https://worldometers.info/coronavirus/ and parses it to get the table that
+        displays data from the current date.
 
         Returns
         -------
@@ -29,7 +94,8 @@ class CoronaModel:
         return str(table_body)
 
     def parse_raw_data(self, html_content: str = None) -> list[tuple]:
-        """Parses raw html table body for data.
+        """
+        Parses raw html table body for data.
 
         Parameters
         ----------
@@ -111,4 +177,4 @@ class CoronaModel:
 
 
 if __name__ == "__main__":
-    corona = CoronaModel()
+    corona = CoronaModel("Russia", "Malaysia", "China")
