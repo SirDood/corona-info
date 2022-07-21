@@ -1,6 +1,6 @@
 import sys
 
-from models import CoronaModel
+from corona_info.models import CoronaModel
 
 
 def main(*args):

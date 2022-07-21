@@ -3,7 +3,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 
-from helpers import cache_file, get_cache_dir, get_file_content
+from ..helpers import cache_file, get_cache_dir, get_file_content
 
 
 class CoronaModel:
