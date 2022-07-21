@@ -67,32 +67,41 @@ class CoronaModel:
         clean_data_path = get_cache_dir("clean")
 
         result = []
-        if no_cache or not os.path.exists(raw_data_path):
+        # Using cache
+        if not no_cache:
+            # If clean cache exists and it's not empty
+            if os.path.exists(clean_data_path) and get_file_content(clean_data_path):
+                clean_data = get_file_content(clean_data_path)
+                result = self.parse_clean_data(clean_data)
+
+            # If raw cache exists and it's not empty
+            elif os.path.exists(raw_data_path) and get_file_content(raw_data_path):
+                raw_data = get_file_content(raw_data_path)
+
+                clean_data = self.parse_raw_data(raw_data)
+                clean_data_as_str = self.convert_data_as_str(clean_data)
+                cache_file("clean", clean_data_as_str)
+
+                result = self.parse_raw_data(raw_data)
+
+            else:
+                # For when there is literally no cache, so must fetch data
+                no_cache = not no_cache
+
+        # If bypass cache or there is literally no cache
+        if no_cache:
             raw_data = self.fetch_data()
             cache_file("raw", raw_data)
 
             clean_data = self.parse_raw_data(raw_data)
-            # Convert the tuples in the list into strings
-            clean_data_to_str = [",".join(country_data) for country_data in clean_data]
-            cache_file("clean", "\n".join(clean_data_to_str))
+            clean_data_as_str = self.convert_data_as_str(clean_data)
+            cache_file("clean", clean_data_as_str)
 
             result = clean_data[0:]
 
-        else:
-            if os.path.exists(clean_data_path):
-                clean_data = get_file_content(clean_data_path)
-                result = self.parse_clean_data(clean_data)
-
-            elif os.path.exists(raw_data_path):
-                raw_data = get_file_content(raw_data_path)
-                result = self.parse_raw_data(raw_data)
-
         if not get_all:
             result = filter(lambda country_data: country_data[1] in self.countries, result)
-            result = list(result)
 
-        # Convert any number strings into... actual numbers
-        result = map(lambda country_data: tuple(convert_to_num(data) for data in country_data), result)
         result = sorted(result, key=lambda country_data: country_data[sort_by])
         return result
 
@@ -148,7 +157,8 @@ class CoronaModel:
 
     def parse_raw_data(self, html_content: str = None) -> list[tuple]:
         """
-        Parses raw html table body for data.
+        Parses raw html table body for data. The numbers in the returned data will still be strings rather than int
+        or float.
 
         Parameters
         ----------
@@ -157,8 +167,8 @@ class CoronaModel:
 
         Returns
         -------
-        list[str]
-            A list of strings which contain the sanitised data of all available countries.
+        list[tuple]
+            A list of tuples which contain the sanitised data of all available countries.
         """
         soup = BeautifulSoup(html_content, "html.parser")
         countries = soup.find_all("tr")[7:]
@@ -175,6 +185,9 @@ class CoronaModel:
                 # For World, "No." is just nothing, so this is to assign it 0
                 if i == 0 and not value:
                     value = "0"
+                if "+" in value:
+                    value = value[1:]
+                value = convert_to_num(value)
 
                 clean_data.append(value)
 
@@ -200,11 +213,28 @@ class CoronaModel:
             A list of tuples which contain clean data of all available countries.
         """
         countries_data = csv_content.split(delimiter)
-        result = []
-        for row_data in countries_data:
-            data_tuple = tuple(row_data.split(","))
-            result.append(data_tuple)
+        result = map(lambda row: row.split(","), countries_data)
+        result = map(lambda row: tuple(convert_to_num(data) for data in row), result)
 
+        return result
+
+    def convert_data_as_str(self, clean_data: list[tuple]) -> str:
+        """
+        Converts the given clean data as string.
+
+        Parameters
+        ----------
+        clean_data: list[tuple]
+            The list of tuples of clean data that will be converted as a string.
+
+        Returns
+        -------
+        str
+            A string of the clean data.
+        """
+        tuples_to_str = map(lambda country_data: ",".join(str(data) for data in country_data), clean_data)
+
+        result = "\n".join(tuples_to_str)
         return result
 
 

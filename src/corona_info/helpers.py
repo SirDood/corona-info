@@ -47,6 +47,19 @@ def cache_file(file_name: str, content: str):
 
 
 def get_file_content(file_path: str) -> str:
+    """
+    Gets the contents of the file at the given file path.
+
+    Parameters
+    ----------
+    file_path: str
+        A string of the path of the file.
+
+    Returns
+    -------
+    str
+        A string of the given file's contents.
+    """
     with open(file_path, "r") as file:
         return file.read()
 
@@ -86,9 +99,6 @@ def convert_to_num(text: str) -> int | float | str:
 
     """
     result = text
-
-    if "+" in result:
-        result = result[1:]
 
     if not result:  # If empty string
         result = 0
