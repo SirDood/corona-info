@@ -69,6 +69,37 @@ def is_float(text: str) -> bool:
     return bool(match)
 
 
+def convert_to_num(text: str) -> int | float | str:
+    """
+    Converts a string into either an int or float, depending on the string given. Returns the original string if it
+    is not a number.
+
+    Parameters
+    ----------
+    text: str
+        A string that may or may not be converted into int or float.
+
+    Returns
+    -------
+    int | float | str
+        An int or float if the given string is a number. A string of the original string.
+
+    """
+    result = text
+
+    if "+" in result:
+        result = result[1:]
+
+    if not result:  # If empty string
+        result = 0
+    elif result.isdigit():
+        result = int(result)
+    elif is_float(result):
+        result = float(result)
+
+    return result
+
+
 if __name__ == "__main__":
     get_cache_dir()
     print(is_float("1001947.86"))

@@ -3,7 +3,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 
-from ..helpers import cache_file, get_cache_dir, get_file_content
+from ..helpers import cache_file, get_cache_dir, get_file_content, convert_to_num
 
 
 class CoronaModel:
@@ -40,7 +40,11 @@ class CoronaModel:
         """
         self.countries = args
 
-    def get_data(self, sort_by: int = NO, no_cache: bool = False, get_all: bool = False) -> list[tuple]:
+    def get_data(
+            self,
+            sort_by: int = NO,
+            no_cache: bool = False,
+            get_all: bool = False) -> list[tuple[int | str | float]]:
         """
         Gets data filtered based on the countries given in the constructor. For most cases, this should be the main
         entrypoint for getting data.
@@ -48,7 +52,7 @@ class CoronaModel:
         Parameters
         ----------
         sort_by: int
-            Sorts the filtered result based on the given key. Defaults to CoronaModel.No
+            Sorts the filtered result based on the given key in ascending order. Defaults to CoronaModel.NO
         no_cache: bool
             Bypasses retrieving data from cache and fetches new data if True. Defaults to False
         get_all: bool
@@ -58,7 +62,6 @@ class CoronaModel:
         -------
         list[tuple]
             A list of tuples containing data of countries.
-
         """
         raw_data_path = get_cache_dir("raw")
         clean_data_path = get_cache_dir("clean")
@@ -88,7 +91,40 @@ class CoronaModel:
             result = filter(lambda country_data: country_data[1] in self.countries, result)
             result = list(result)
 
+        # Convert any number strings into... actual numbers
+        result = map(lambda country_data: tuple(convert_to_num(data) for data in country_data), result)
+        result = sorted(result, key=lambda country_data: country_data[sort_by])
         return result
+
+    def get_table_headers(self) -> list[str]:
+        """
+        Gets the table headers of the data.
+
+        Returns
+        -------
+        list[str]
+            A list of strings of table headers.
+
+        """
+        headers = [
+            "No.",
+            "Country",
+            "Total Cases",
+            "New Cases",
+            "Total Deaths",
+            "New Deaths",
+            "Total Recovered",
+            "New Recovered",
+            "Active Cases",
+            "Serious",
+            "Total Cases/1M",
+            "Deaths/1M",
+            "Total Tests",
+            "Tests/1M",
+            "Population"
+        ]
+
+        return headers
 
     def fetch_data(self) -> str:
         """
@@ -100,7 +136,6 @@ class CoronaModel:
         str
             A string of the raw html table body data.
         """
-
         url = "https://www.worldometers.info/coronavirus/"
         req = requests.get(url)
         soup = BeautifulSoup(req.text, "html.parser")
@@ -171,27 +206,6 @@ class CoronaModel:
             result.append(data_tuple)
 
         return result
-
-    def get_table_headers(self) -> list[str]:
-        headers = [
-            "No.",
-            "Country",
-            "Total Cases",
-            "New Cases",
-            "Total Deaths",
-            "New Deaths",
-            "Total Recovered",
-            "New Recovered",
-            "Active Cases",
-            "Serious",
-            "Total Cases/1M",
-            "Deaths/1M",
-            "Total Tests",
-            "Tests/1M",
-            "Population"
-        ]
-
-        return headers
 
 
 if __name__ == "__main__":
