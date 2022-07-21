@@ -7,6 +7,22 @@ from helpers import cache_file, get_cache_dir, get_file_content
 
 
 class CoronaModel:
+    NO = 0
+    COUNTRY = 1
+    TOTALCASES = 2
+    NEWCASES = 3
+    TOTALDEATHS = 4
+    NEWDEATHS = 5
+    TOTALRECOVERED = 6
+    NEWRECOVERED = 7
+    ACTIVECASES = 8
+    SERIOUS = 9
+    TOTALCASESPER1M = 10
+    DEATHSPER1M = 11
+    TOTALTESTS = 12
+    TESTSPER1M = 13
+    POPULATION = 14
+
     def __init__(self, *args: str):
         """
         The CoronaModel class represents data related to the Covid-19 virus. This data is scraped from
@@ -24,13 +40,15 @@ class CoronaModel:
         """
         self.countries = args
 
-    def get_data(self, no_cache: bool = False, get_all: bool = False) -> list[tuple]:
+    def get_data(self, sort_by: int = NO, no_cache: bool = False, get_all: bool = False) -> list[tuple]:
         """
         Gets data filtered based on the countries given in the constructor. For most cases, this should be the main
         entrypoint for getting data.
 
         Parameters
         ----------
+        sort_by: int
+            Sorts the filtered result based on the given key. Defaults to CoronaModel.No
         no_cache: bool
             Bypasses retrieving data from cache and fetches new data if True. Defaults to False
         get_all: bool
