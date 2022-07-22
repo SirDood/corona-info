@@ -2,6 +2,7 @@ import os
 
 import requests
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 
 from ..helpers import cache_file, get_cache_dir, get_file_content, convert_to_num
 
@@ -82,7 +83,8 @@ class CoronaModel:
                 clean_data_as_str = self.convert_data_as_str(clean_data)
                 cache_file("clean", clean_data_as_str)
 
-                result = self.parse_raw_data(raw_data)
+                clean_data = get_file_content(clean_data_path)
+                result = self.parse_clean_data(clean_data)
 
             else:
                 # For when there is literally no cache, so must fetch data
@@ -97,7 +99,8 @@ class CoronaModel:
             clean_data_as_str = self.convert_data_as_str(clean_data)
             cache_file("clean", clean_data_as_str)
 
-            result = clean_data[0:]
+            clean_data = get_file_content(clean_data_path)
+            result = self.parse_clean_data(clean_data)
 
         if not get_all:
             result = filter(lambda country_data: country_data[1] in self.countries, result)
@@ -153,9 +156,10 @@ class CoronaModel:
         table = soup.find(id="main_table_countries_today")
         table_body = table.find("tbody")
 
-        return str(table_body)
+        result = str(table_body)
+        return result
 
-    def parse_raw_data(self, html_content: str = None) -> list[tuple]:
+    def parse_raw_data(self, html_content: str = None) -> map:
         """
         Parses raw html table body for data. The numbers in the returned data will still be strings rather than int
         or float.
@@ -170,32 +174,38 @@ class CoronaModel:
         list[tuple]
             A list of tuples which contain the sanitised data of all available countries.
         """
+
+        def sanitise_value(i: int, value: str):
+            # For numbers with commas in them (thousands, millions, etc.)
+            clean_value = value.replace(",", "").strip()
+
+            # For World, "No." is just nothing, so this is to assign it 0
+            if i == 0 and not clean_value:
+                clean_value = "0"
+            # For New Whatever values which have a + at the start
+            if len(clean_value) > 0 and clean_value[0] == "+":
+                clean_value = clean_value[1:]
+
+            result = convert_to_num(clean_value)
+            return result
+
+        def sanitise_data(data: Tag):
+            country_data = data.find_all("td")[:15]
+            sanitised_data = map(
+                lambda enum_data: sanitise_value(enum_data[0], enum_data[1].text),
+                enumerate(country_data)
+            )
+
+            result = tuple(sanitised_data)
+            return result
+
         soup = BeautifulSoup(html_content, "html.parser")
         countries = soup.find_all("tr")[7:]
-
-        # Get content of each column
-        result = []
-        for country in countries:
-            country_data = country.find_all("td")[:15]
-
-            clean_data = []
-            for i, data in enumerate(country_data, 0):
-                value = data.text.replace(",", "").strip()
-
-                # For World, "No." is just nothing, so this is to assign it 0
-                if i == 0 and not value:
-                    value = "0"
-                if "+" in value:
-                    value = value[1:]
-                value = convert_to_num(value)
-
-                clean_data.append(value)
-
-            result.append(tuple(clean_data))
+        result = map(lambda country: sanitise_data(country), countries)
 
         return result
 
-    def parse_clean_data(self, csv_content: str = None, delimiter: str = "\n") -> list[tuple]:
+    def parse_clean_data(self, csv_content: str = None, delimiter: str = "\n") -> map:
         r"""
         Parses csv-like file for data.
 
@@ -213,8 +223,11 @@ class CoronaModel:
             A list of tuples which contain clean data of all available countries.
         """
         countries_data = csv_content.split(delimiter)
-        result = map(lambda row: row.split(","), countries_data)
-        result = map(lambda row: tuple(convert_to_num(data) for data in row), result)
+
+        # Using map() here cause it's significantly faster, by like 100 times.
+        # (In practice, this isn't really noticeable tho lmao)
+        str_to_list = map(lambda row: row.split(","), countries_data)
+        result = map(lambda row: tuple(convert_to_num(data) for data in row), str_to_list)
 
         return result
 
@@ -232,9 +245,12 @@ class CoronaModel:
         str
             A string of the clean data.
         """
-        tuples_to_str = map(lambda country_data: ",".join(str(data) for data in country_data), clean_data)
-
+        tuples_to_str = []
+        for country_data in clean_data:
+            data_to_str = ",".join(str(data) for data in country_data)
+            tuples_to_str.append(data_to_str)
         result = "\n".join(tuples_to_str)
+
         return result
 
 
