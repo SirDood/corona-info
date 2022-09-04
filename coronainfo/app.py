@@ -22,6 +22,7 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Gio
 
 from coronainfo.views import MainWindow, AboutDialog
+from coronainfo.utils.ui_helpers import create_action
 
 
 class CoronaInfoApp(Gtk.Application):
@@ -29,9 +30,9 @@ class CoronaInfoApp(Gtk.Application):
         super().__init__(application_id="com.izzthedude.CoronaInfo",
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
 
-        self.create_action("preferences", self.on_preferences_action, ["<Ctrl>period"])
-        self.create_action("about", self.on_about_action)
-        self.create_action("quit", self.on_quit_action, ["<Ctrl>q"])
+        create_action(self, "preferences", self.on_preferences_action, ["<Ctrl>period"])
+        create_action(self, "about", self.on_about_action)
+        create_action(self, "quit", self.on_quit_action, ["<Ctrl>q"])
 
     def do_activate(self):
         win = self.props.active_window
@@ -49,13 +50,6 @@ class CoronaInfoApp(Gtk.Application):
 
     def on_quit_action(self, action: Gio.SimpleAction, param):
         self.quit()
-
-    def create_action(self, name: str, callback, shortcuts: list = None):
-        action = Gio.SimpleAction.new(name, None)
-        action.connect("activate", callback)
-        self.add_action(action)
-        if shortcuts:
-            self.set_accels_for_action(f"app.{name}", shortcuts)
 
 
 def main(version):

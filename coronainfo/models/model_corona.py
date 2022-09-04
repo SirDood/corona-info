@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
-from coronainfo.helpers import cache_file, get_cache_dir, get_file_content, convert_to_num
+from coronainfo.utils.cache import cache_file, get_cache_dir, get_file_content, convert_to_num
 from coronainfo.models.model_base import BaseEnum
 
 
