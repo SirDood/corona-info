@@ -1,1 +1,1 @@
-from .models import CoronaModel
+from src.models.model_corona import CoronaModel

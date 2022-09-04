@@ -1,29 +1,33 @@
 import os
+from enum import auto
 
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
-from ..helpers import cache_file, get_cache_dir, get_file_content, convert_to_num
+from src.helpers import cache_file, get_cache_dir, get_file_content, convert_to_num
+from src.models.model_base import BaseEnum
+
+
+class CoronaHeaders(BaseEnum):
+    RANK = auto()
+    COUNTRY = auto()
+    TOTAL_CASES = auto()
+    NEW_CASES = auto()
+    TOTAL_DEATHS = auto()
+    NEW_DEATHS = auto()
+    TOTAL_RECOVERED = auto()
+    NEW_RECOVERED = auto()
+    ACTIVE_CASES = auto()
+    SERIOUS_CASES = auto()
+    TOTAL_CASES_PER_1M = auto()
+    DEATHS_PER_1M = auto()
+    TOTAL_TESTS = auto()
+    TESTS_PER_1M = auto()
+    POPULATION = auto()
 
 
 class CoronaModel:
-    NO = 0
-    COUNTRY = 1
-    TOTALCASES = 2
-    NEWCASES = 3
-    TOTALDEATHS = 4
-    NEWDEATHS = 5
-    TOTALRECOVERED = 6
-    NEWRECOVERED = 7
-    ACTIVECASES = 8
-    SERIOUS = 9
-    TOTALCASESPER1M = 10
-    DEATHSPER1M = 11
-    TOTALTESTS = 12
-    TESTSPER1M = 13
-    POPULATION = 14
-
     def __init__(self, *args: str):
         """
         The CoronaModel class represents data related to the Covid-19 virus. This data is scraped from
@@ -43,7 +47,7 @@ class CoronaModel:
 
     def get_data(
             self,
-            sort_by: int = NO,
+            sort_by: int = int(CoronaHeaders.RANK),
             no_cache: bool = False,
             get_all: bool = False) -> list[tuple[int | str | float]]:
         """
@@ -108,36 +112,6 @@ class CoronaModel:
         result = sorted(result, key=lambda country_data: country_data[sort_by])
         return result
 
-    def get_table_headers(self) -> list[str]:
-        """
-        Gets the table headers of the data.
-
-        Returns
-        -------
-        list[str]
-            A list of strings of table headers.
-
-        """
-        headers = [
-            "No.",
-            "Country",
-            "Total Cases",
-            "New Cases",
-            "Total Deaths",
-            "New Deaths",
-            "Total Recovered",
-            "New Recovered",
-            "Active Cases",
-            "Serious",
-            "Total Cases/1M",
-            "Deaths/1M",
-            "Total Tests",
-            "Tests/1M",
-            "Population"
-        ]
-
-        return headers
-
     def fetch_data(self) -> str:
         """
         Fetches raw html data from https://worldometers.info/coronavirus/ and parses it to get the table that
@@ -175,19 +149,9 @@ class CoronaModel:
             A list of tuples which contain the sanitised data of all available countries.
         """
 
-        def sanitise_value(i: int, value: str):
-            # For numbers with commas in them (thousands, millions, etc.)
-            clean_value = value.replace(",", "").strip()
-
-            # For World, "No." is just nothing, so this is to assign it 0
-            if i == 0 and not clean_value:
-                clean_value = "0"
-            # For New Whatever values which have a + at the start
-            if len(clean_value) > 0 and clean_value[0] == "+":
-                clean_value = clean_value[1:]
-
-            result = convert_to_num(clean_value)
-            return result
+        soup = BeautifulSoup(html_content, "html.parser")
+        countries = soup.find_all("tr")[7:]
+        result = map(lambda country: sanitise_data(country), countries)
 
         def sanitise_data(data: Tag):
             country_data = data.find_all("td")[:15]
@@ -199,9 +163,19 @@ class CoronaModel:
             result = tuple(sanitised_data)
             return result
 
-        soup = BeautifulSoup(html_content, "html.parser")
-        countries = soup.find_all("tr")[7:]
-        result = map(lambda country: sanitise_data(country), countries)
+        def sanitise_value(i: int, value: str):
+            # For numbers with commas in them (thousands, millions, etc.)
+            clean_value = value.replace(",", "").strip()
+
+            # For World, its rank is just nothing, so this is to assign it 0
+            if i == 0 and clean_value is None:
+                clean_value = "0"
+            # For New Whatever values which have a + at the start
+            if len(clean_value) > 0 and clean_value[0] == "+":
+                clean_value = clean_value[1:]
+
+            result = convert_to_num(clean_value)
+            return result
 
         return result
 
@@ -224,7 +198,7 @@ class CoronaModel:
         """
         countries_data = csv_content.split(delimiter)
 
-        # Using map() here cause it's significantly faster, by like 100 times.
+        # Using map() here because it's significantly faster, by like 100 times.
         # (In practice, this isn't really noticeable tho lmao)
         str_to_list = map(lambda row: row.split(","), countries_data)
         result = map(lambda row: tuple(convert_to_num(data) for data in row), str_to_list)
@@ -252,7 +226,3 @@ class CoronaModel:
         result = "\n".join(tuples_to_str)
 
         return result
-
-
-if __name__ == "__main__":
-    corona = CoronaModel("Russia", "Malaysia", "China")
