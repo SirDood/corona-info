@@ -18,20 +18,14 @@
 from gi.repository import Gtk
 
 
-@Gtk.Template(resource_path="/ui/main-window")
+@Gtk.Template(resource_path="/coronainfo/ui/main-window")
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = "MainWindow"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        shortcuts_window = ShortcutsWindow()
+
+        # Set the shortcuts window aka help overlay
+        builder: Gtk.Builder = Gtk.Builder.new_from_resource("/coronainfo/ui/help-overlay")
+        shortcuts_window: Gtk.ShortcutsWindow = builder.get_object("help_overlay")
         self.set_help_overlay(shortcuts_window)
-
-
-@Gtk.Template(resource_path="/ui/help-overlay")
-class ShortcutsWindow(Gtk.ShortcutsWindow):
-    __gtype_name__ = "ShortcutsWindow"
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-

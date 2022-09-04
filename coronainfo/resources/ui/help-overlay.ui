@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ShortcutsWindow" parent="GtkShortcutsWindow">
+  <object class="GtkShortcutsWindow" id="help_overlay">
     <property name="modal">True</property>
     <child>
       <object class="GtkShortcutsSection">
@@ -11,13 +11,15 @@
             <property name="title" translatable="yes" context="shortcut window">General</property>
             <child>
               <object class="GtkShortcutsShortcut">
-                <property name="title" translatable="yes" context="shortcut window">Show Preferences</property>
+                <property name="title" translatable="yes" context="shortcut window">Show Preferences
+                </property>
                 <property name="action-name">app.preferences</property>
               </object>
             </child>
             <child>
               <object class="GtkShortcutsShortcut">
-                <property name="title" translatable="yes" context="shortcut window">Show Shortcuts</property>
+                <property name="title" translatable="yes" context="shortcut window">Show Shortcuts
+                </property>
                 <property name="action-name">win.show-help-overlay</property>
               </object>
             </child>
@@ -31,5 +33,5 @@
         </child>
       </object>
     </child>
-  </template>
+  </object>
 </interface>

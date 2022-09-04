@@ -14,21 +14,19 @@ def main(*args):
 
 
 def main_ui():
-    import gi
     from gi.repository import Gio
 
     SOURCE_DIR = os.path.join(os.path.dirname(__file__), "coronainfo")
     GRESOURCE_XML = os.path.join(SOURCE_DIR, "coronainfo.gresource.xml")
     GRESOURCE_BIN = os.path.join(SOURCE_DIR, "resources", "gresource")
 
-    if not os.path.exists(GRESOURCE_BIN):
-        command = [
-            "glib-compile-resources",
-            f"--sourcedir={SOURCE_DIR}",
-            f"--target={GRESOURCE_BIN}",
-            GRESOURCE_XML
-        ]
-        subprocess.call(command)
+    command = [
+        "glib-compile-resources",
+        f"--sourcedir={SOURCE_DIR}",
+        f"--target={GRESOURCE_BIN}",
+        GRESOURCE_XML
+    ]
+    subprocess.call(command)
 
     resource = Gio.Resource.load(GRESOURCE_BIN)
     resource._register()

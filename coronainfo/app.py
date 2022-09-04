@@ -31,7 +31,7 @@ class CoronaInfoApp(Gtk.Application):
 
         self.create_action("preferences", self.on_preferences_action, ["<Ctrl>period"])
         self.create_action("about", self.on_about_action)
-        self.create_action("quit", self.on_quit_action, ["<Ctrl>q", "<Ctrl>w"])
+        self.create_action("quit", self.on_quit_action, ["<Ctrl>q"])
 
     def do_activate(self):
         win = self.props.active_window
@@ -61,4 +61,3 @@ class CoronaInfoApp(Gtk.Application):
 def main(version):
     app = CoronaInfoApp()
     return app.run(sys.argv)
-

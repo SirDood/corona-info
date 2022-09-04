@@ -21,11 +21,15 @@ from gi.repository import Gtk
 class AboutDialog(Gtk.AboutDialog):
     def __init__(self, parent):
         Gtk.AboutDialog.__init__(self)
-        self.props.program_name = "Corona Info"
-        self.props.version = "0.1.0"
-        self.props.authors = ["Izzat Z."]
-        self.props.copyright = "2022 Izzat Z."
-        self.props.logo_icon_name = "com.izzthedude.CoronaInfo"
-        self.props.modal = True
+        self.set_modal(True)
         self.set_transient_for(parent)
 
+        self.set_program_name("Corona Info")
+        self.set_version("0.1.0")
+        self.set_logo_icon_name("com.izzthedude.CoronaInfo")
+
+        self.set_authors(["Izzat Z."])
+        self.set_copyright("2022 Izzat Z.")
+        self.set_license_type(Gtk.License.GPL_3_0)
+        self.set_website("https://github.com/izzthedude/corona-info")
+        self.set_website_label("GitHub")
