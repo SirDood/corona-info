@@ -10,7 +10,7 @@ from coronainfo.models.model_base import BaseEnum
 
 
 class CoronaHeaders(BaseEnum):
-    RANK = auto()
+    NO = auto()
     COUNTRY = auto()
     TOTAL_CASES = auto()
     NEW_CASES = auto()
@@ -47,7 +47,7 @@ class CoronaModel:
 
     def get_data(
             self,
-            sort_by: int = int(CoronaHeaders.RANK),
+            sort_by: int = int(CoronaHeaders.NO),
             no_cache: bool = False,
             get_all: bool = False) -> list[tuple[int | str | float]]:
         """
