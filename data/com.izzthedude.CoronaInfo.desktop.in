@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=coronainfo
+Exec=coronainfo
+Icon=com.izzthedude.CoronaInfo
+Terminal=false
+Type=Application
+Categories=GTK;
+StartupNotify=true

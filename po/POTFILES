@@ -1,0 +1,7 @@
+data/com.izzthedude.CoronaInfo.desktop.in
+data/com.izzthedude.CoronaInfo.appdata.xml.in
+data/com.izzthedude.CoronaInfo.gschema.xml
+src/window.ui
+src/main.py
+src/window.py
+
