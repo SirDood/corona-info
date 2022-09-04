@@ -5,8 +5,8 @@ import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
-from src.helpers import cache_file, get_cache_dir, get_file_content, convert_to_num
-from src.models.model_base import BaseEnum
+from coronainfo.helpers import cache_file, get_cache_dir, get_file_content, convert_to_num
+from coronainfo.models.model_base import BaseEnum
 
 
 class CoronaHeaders(BaseEnum):
