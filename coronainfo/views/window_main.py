@@ -45,7 +45,7 @@ class MainWindow(Gtk.ApplicationWindow):
         create_action(self, "toggle-search", self.on_toggle_search_action)
 
         self.searchbar.connect_entry(self.search_entry)
-        self.searchbar.set_key_capture_widget(self)
+        self.searchbar.set_key_capture_widget(self.table)
         self.searchbar.bind_property(
             "search-mode-enabled",
             self.search_btn,
@@ -54,11 +54,11 @@ class MainWindow(Gtk.ApplicationWindow):
         )
 
         self.controller = AppController.get_main_controller()
+        self.controller.set_table(self.table)
+        self.controller.start_populate()
         self.setup_table()
 
     def setup_table(self):
-        self.controller.set_table(self.table)
-
         # Hide some columns initially
         columns: list[Gtk.TreeViewColumn] = self.table.get_columns()
         columns[int(CoronaHeaders.TOTAL_RECOVERED)].set_visible(False)
@@ -83,7 +83,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_search(self, entry: Gtk.SearchEntry):
-        print("ENTRY:", entry.get_text())
+        self.controller.set_filter(entry.get_text())
 
     def on_toggle_columns_action(self, action: Gio.SimpleAction, param):
         print("TOGGLE COLUMNS")

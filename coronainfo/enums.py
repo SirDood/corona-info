@@ -8,7 +8,4 @@ class Paths:
 
     CACHE_DIR = Path.home() / ".cache" / "coronainfo"
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-
-class Cache:
-    RAW_HTML = Paths.CACHE_DIR / "raw_html.html"
+    CACHE = CACHE_DIR / "data.json"

@@ -1,1 +1,1 @@
-from .model_corona import CoronaData, CoronaHeaders, CoronaModel
+from .model_corona import CoronaData, CoronaHeaders

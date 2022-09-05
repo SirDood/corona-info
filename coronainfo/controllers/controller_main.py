@@ -1,9 +1,10 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from gi.repository import GLib, GObject, Gio, Gtk
 
-from coronainfo.enums import Cache
+from coronainfo.enums import Paths
 from coronainfo.models import CoronaData, CoronaHeaders
-from coronainfo.utils.cache import cache_file
+from coronainfo.utils.cache import cache_json, get_cache_json
+from coronainfo.utils.functions import convert_to_num
 
 
 class MainController(GObject.Object):
@@ -17,38 +18,23 @@ class MainController(GObject.Object):
         self.country_filter = ""
         self.set_filter(self.country_filter)
 
+    def start_populate(self):
+        # TODO: figure out how to do this in a thread with GTK
+        self.load_data()
+
+    def load_data(self):
+        for row in self._get_data():
+            self.model.append(row)
+        self.set_filter(self.country_filter)
+
     def on_refresh(self):
-        self._fetch_data()
-        pass
+        # TODO: figure out how to do this in a thread with GTK
+        self.refresh_data()
 
-    def _fetch_data(self):
-        fetch_url: Gio.File = Gio.File.new_for_uri("https://www.worldometers.info/coronavirus/")
-
-        success, content, etag = False, None, None
-        try:
-            success, content, etag = fetch_url.load_contents(None)
-            print("Successfully fetched data")
-
-            # Parse html content and find the table for today
-            soup = BeautifulSoup(content, "html.parser")
-            table = soup.find(id="main_table_countries_today")
-            table_body = table.find("tbody")
-            output = str(table_body)
-
-        except GLib.Error as err:
-            print("An error has occurred while fetching data:", err)
-            return
-
-        file_name = Cache.RAW_HTML.name
-        try:
-            cache_file(file_name, output)
-            print("Successfully cached raw html data")
-
-        except Exception as err:
-            print("An error has occurred while caching raw html data:", err)
-
-    def on_fetch_data_finished(self, source: Gio.File, result: Gio.AsyncResult, data):
-        pass
+    def refresh_data(self):
+        for row in self._get_data(use_cache=False):
+            self.model.append(row)
+        self.set_filter(self.country_filter)
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -61,8 +47,7 @@ class MainController(GObject.Object):
             column = Gtk.TreeViewColumn(title, renderer, text=i)
             column.set_alignment(0.5)
             column.set_sort_column_id(i)
-            if not i == int(CoronaHeaders.NO):
-                column.set_expand(True)
+            column.set_expand(True)
 
             self.table.append_column(column)
 
@@ -79,3 +64,59 @@ class MainController(GObject.Object):
 
         country = model[tree_iter][int(CoronaHeaders.COUNTRY)]
         return self.country_filter.lower() in country.lower()
+
+    def _get_data(self, use_cache: bool = True):
+        cache_file = Paths.CACHE
+
+        if not cache_file.exists() or not use_cache:
+            dataset = self._fetch_data()
+            cache_json(cache_file.name, [row.as_dict() for row in dataset])
+
+        json_data = get_cache_json(cache_file.name)
+        result = map(lambda row: CoronaData(**row), json_data)
+        return result
+
+    def _fetch_data(self) -> map:
+        fetch_url: Gio.File = Gio.File.new_for_uri("https://www.worldometers.info/coronavirus/")
+        try:
+            success, content, etag = fetch_url.load_contents(None)
+            print("Successfully fetched data")
+
+            # Parse html content and find the table for today
+            soup = BeautifulSoup(content, "html.parser")
+            table = soup.find(id="main_table_countries_today")
+            table_body = table.find("tbody")
+
+            result = self._parse_table_html(table_body)
+            return result
+
+        except GLib.Error as err:
+            print("An error has occurred while fetching data:", err)
+
+    def _parse_table_html(self, table: Tag) -> map:
+        countries: list[Tag] = table.find_all("tr")[7:]
+        result = map(lambda country: sanitise_row(country), countries)
+
+        def sanitise_row(clean_row: Tag):
+            row_data = clean_row.find_all("td")[1:15]
+            sanitised_row = map(lambda value: sanitise_value(value.text), row_data)
+            clean_row = CoronaData(*sanitised_row)
+
+            return clean_row
+
+        def sanitise_value(value: str):
+            sanitised_value = value.replace(",", "").strip()
+
+            # For New Whatever values which have a + at the start
+            if len(sanitised_value) > 0 and sanitised_value[0] == "+":
+                sanitised_value = sanitised_value[1:]
+            if sanitised_value == "N/A":
+                sanitised_value = None
+
+            clean_value = convert_to_num(sanitised_value)
+            if isinstance(clean_value, float):
+                clean_value = int(clean_value)
+
+            return clean_value
+
+        return result

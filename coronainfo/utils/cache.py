@@ -1,3 +1,5 @@
+import json
+
 from coronainfo.enums import Paths
 
 
@@ -14,6 +16,27 @@ def cache_file(file_name: str, content: str):
     path = Paths.CACHE_DIR / file_name
     with open(path, "w") as file:
         file.write(content)
+
+
+def cache_json(file_name: str, json_data):
+    """Caches the specified file at the app's cache directory, which is at `~/.cache/corona-info/`
+
+    Parameters
+    ----------
+    file_name : str
+        A string of the file's name.
+    content : str
+        A string of the content that will be written into the specified file.
+    """
+    path = Paths.CACHE_DIR / file_name
+    with open(path, "w") as file:
+        json.dump(json_data, file)
+
+
+def get_cache_json(file_name: str):
+    path = Paths.CACHE_DIR / file_name
+    with open(path, "r") as file:
+        return json.load(file)
 
 
 def get_file_content(file_path: str) -> str:

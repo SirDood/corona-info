@@ -2,18 +2,8 @@ import os
 import subprocess
 import sys
 
-from coronainfo.models import CoronaModel
 
-
-def main(*args):
-    model = CoronaModel(*args)
-    data = model.get_data()
-
-    for country in data:
-        print(country)
-
-
-def main_ui():
+def main():
     from gi.repository import Gio
 
     SOURCE_DIR = os.path.join(os.path.dirname(__file__), "coronainfo")
@@ -36,6 +26,4 @@ def main_ui():
 
 
 if __name__ == "__main__":
-    sys_args = sys.argv[1:]
-    # main(*sys_args)
-    main_ui()
+    main()
