@@ -1,6 +1,9 @@
-from gi.repository import GObject, Gtk
+from bs4 import BeautifulSoup
+from gi.repository import GLib, GObject, Gio, Gtk
 
+from coronainfo.enums import Cache
 from coronainfo.models import CoronaData, CoronaHeaders
+from coronainfo.utils.cache import cache_file
 
 
 class MainController(GObject.Object):
@@ -13,6 +16,39 @@ class MainController(GObject.Object):
         self.model = Gtk.ListStore(*field_types)
         self.country_filter = ""
         self.set_filter(self.country_filter)
+
+    def on_refresh(self):
+        self._fetch_data()
+        pass
+
+    def _fetch_data(self):
+        fetch_url: Gio.File = Gio.File.new_for_uri("https://www.worldometers.info/coronavirus/")
+
+        success, content, etag = False, None, None
+        try:
+            success, content, etag = fetch_url.load_contents(None)
+            print("Successfully fetched data")
+
+            # Parse html content and find the table for today
+            soup = BeautifulSoup(content, "html.parser")
+            table = soup.find(id="main_table_countries_today")
+            table_body = table.find("tbody")
+            output = str(table_body)
+
+        except GLib.Error as err:
+            print("An error has occurred while fetching data:", err)
+            return
+
+        file_name = Cache.RAW_HTML.name
+        try:
+            cache_file(file_name, output)
+            print("Successfully cached raw html data")
+
+        except Exception as err:
+            print("An error has occurred while caching raw html data:", err)
+
+    def on_fetch_data_finished(self, source: Gio.File, result: Gio.AsyncResult, data):
+        pass
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table

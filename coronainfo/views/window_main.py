@@ -71,6 +71,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def on_refresh_action(self, action: Gio.SimpleAction, param):
         print("REFRESH")
+        self.controller.on_refresh()
 
     def on_save_action(self, action: Gio.SimpleAction, param):
         print("SAVE DATA")

@@ -6,8 +6,9 @@ import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
-from coronainfo.models.model_base import BaseEnum, BaseData
-from coronainfo.utils.cache import cache_file, get_cache_dir, get_file_content
+from coronainfo.enums import Cache
+from coronainfo.models.model_base import BaseData, BaseEnum
+from coronainfo.utils.cache import cache_file, get_file_content
 from coronainfo.utils.functions import convert_to_num
 
 
@@ -89,8 +90,8 @@ class CoronaModel:
         list[tuple]
             A list of tuples containing data of countries.
         """
-        raw_data_path = get_cache_dir("raw")
-        clean_data_path = get_cache_dir("clean")
+        raw_data_path = Cache.CACHE_DIR / "raw"
+        clean_data_path = Cache.CACHE_DIR / "clean"
 
         result = []
         # Using cache
