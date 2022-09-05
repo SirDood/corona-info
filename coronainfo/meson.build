@@ -31,5 +31,8 @@ coronainfo_sources = [
   'app.py',
 ]
 
+install_subdir('utils', install_dir: moduledir)
+install_subdir('models', install_dir: moduledir)
 install_subdir('views', install_dir: moduledir)
+install_subdir('controllers', install_dir: moduledir)
 install_data(coronainfo_sources, install_dir: moduledir)

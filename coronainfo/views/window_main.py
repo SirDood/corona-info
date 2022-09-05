@@ -17,14 +17,16 @@
 
 from gi.repository import Gtk, Gio
 
-from coronainfo.utils.ui_helpers import create_action
 from coronainfo.models.model_corona import CoronaHeaders
+from coronainfo.utils.ui_helpers import create_action
 
 
 @Gtk.Template(resource_path="/coronainfo/ui/main-window")
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = "MainWindow"
 
+    searchbar: Gtk.SearchBar = Gtk.Template.Child(name="searchbar")
+    search_entry: Gtk.SearchEntry = Gtk.Template.Child(name="search_entry")
     table: Gtk.TreeView = Gtk.Template.Child(name="table_view")
 
     def __init__(self, **kwargs):
@@ -37,7 +39,12 @@ class MainWindow(Gtk.ApplicationWindow):
 
         create_action(self, "refresh-data", self.on_refresh_action, ["<Ctrl>r"])
         create_action(self, "save-data", self.on_save_action)
+        create_action(self, "toggle-search", self.on_toggle_search_action)
         create_action(self, "toggle-columns", self.on_toggle_columns_action)
+        create_action(self, "search-settings", self.on_search_settings_action, ["<Ctrl>period"])
+
+        self.searchbar.connect_entry(self.search_entry)
+        self.searchbar.set_key_capture_widget(self)
 
         self.setup_table()
 
@@ -61,6 +68,7 @@ class MainWindow(Gtk.ApplicationWindow):
         columns[int(CoronaHeaders.DEATHS_PER_1M)].set_visible(False)
         columns[int(CoronaHeaders.TOTAL_TESTS)].set_visible(False)
         columns[int(CoronaHeaders.TESTS_PER_1M)].set_visible(False)
+        columns[int(CoronaHeaders.POPULATION)].set_visible(False)
 
     def on_refresh_action(self, action: Gio.SimpleAction, param):
         print("REFRESH")
@@ -68,9 +76,17 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_save_action(self, action: Gio.SimpleAction, param):
         print("SAVE DATA")
 
+    def on_toggle_search_action(self, action: Gio.SimpleAction, param):
+        print("TOGGLE SEARCH")
+        search_mode = self.searchbar.get_search_mode()
+        self.searchbar.set_search_mode(not search_mode)
+
     @Gtk.Template.Callback()
     def on_search(self, entry: Gtk.SearchEntry):
-        print("SEARCH ENTRY:", entry.get_text())
+        print("ENTRY:", entry.get_text())
 
     def on_toggle_columns_action(self, action: Gio.SimpleAction, param):
         print("TOGGLE COLUMNS")
+
+    def on_search_settings_action(self, action: Gio.SimpleAction, param):
+        print("SEARCH SETTINGS")

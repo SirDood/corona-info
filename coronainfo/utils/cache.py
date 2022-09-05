@@ -1,5 +1,4 @@
 import os
-import re
 from pathlib import Path
 
 
@@ -62,54 +61,3 @@ def get_file_content(file_path: str) -> str:
     """
     with open(file_path, "r") as file:
         return file.read()
-
-
-def is_float(text: str) -> bool:
-    """Checks if the given string is a float.
-
-    Parameters
-    ----------
-    text : str
-        A string which may contain a float/decimal number.
-
-    Returns
-    -------
-    bool
-        A boolean of whether the given string is a float number or not.
-    """
-    match = re.match(r"^\d*\.\d*$", text)
-
-    return bool(match)
-
-
-def convert_to_num(text: str) -> int | float | str:
-    """
-    Converts a string into either an int or float, depending on the string given. Returns the original string if it
-    is not a number.
-
-    Parameters
-    ----------
-    text: str
-        A string that may or may not be converted into int or float.
-
-    Returns
-    -------
-    int | float | str
-        An int or float if the given string is a number. A string of the original string.
-
-    """
-    result = text
-
-    if not result:  # If empty string
-        result = 0
-    elif result.isdigit():
-        result = int(result)
-    elif is_float(result):
-        result = float(result)
-
-    return result
-
-
-if __name__ == "__main__":
-    get_cache_dir()
-    print(is_float("1001947.86"))

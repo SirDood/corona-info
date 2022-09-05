@@ -1,12 +1,33 @@
 import os
+from dataclasses import dataclass
 from enum import auto
 
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
-from coronainfo.utils.cache import cache_file, get_cache_dir, get_file_content, convert_to_num
-from coronainfo.models.model_base import BaseEnum
+from coronainfo.models.model_base import BaseEnum, BaseData
+from coronainfo.utils.cache import cache_file, get_cache_dir, get_file_content
+from coronainfo.utils.functions import convert_to_num
+
+
+@dataclass
+class CoronaData(BaseData):
+    no: int
+    country: str
+    total_cases: int
+    new_cases: int
+    total_deaths: int
+    new_deaths: int
+    total_recovered: int
+    new_recovered: int
+    active_cases: int
+    serious_cases: int
+    total_cases_per_1m: int
+    deaths_per_1m: int
+    total_tests: int
+    tests_per_1m: int
+    population: int
 
 
 class CoronaHeaders(BaseEnum):
@@ -173,6 +194,9 @@ class CoronaModel:
             # For New Whatever values which have a + at the start
             if len(clean_value) > 0 and clean_value[0] == "+":
                 clean_value = clean_value[1:]
+
+            if clean_value == "N/A":
+                clean_value = None
 
             result = convert_to_num(clean_value)
             return result

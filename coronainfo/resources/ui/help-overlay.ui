@@ -17,13 +17,13 @@
             </child>
             <child>
               <object class="GtkShortcutsShortcut">
-                <property name="title" translatable="yes" context="shortcut window">Show Preferences</property>
-                <property name="action-name">app.preferences</property>
+                <property name="title" translatable="yes" context="shortcut window">Show filter settings</property>
+                <property name="action-name">win.search-settings</property>
               </object>
             </child>
             <child>
               <object class="GtkShortcutsShortcut">
-                <property name="title" translatable="yes" context="shortcut window">Show Shortcuts</property>
+                <property name="title" translatable="yes" context="shortcut window">Show shortcuts</property>
                 <property name="action-name">win.show-help-overlay</property>
               </object>
             </child>

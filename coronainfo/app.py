@@ -30,7 +30,6 @@ class CoronaInfoApp(Gtk.Application):
         super().__init__(application_id="com.izzthedude.CoronaInfo",
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
 
-        create_action(self, "preferences", self.on_preferences_action, ["<Ctrl>period"])
         create_action(self, "about", self.on_about_action)
         create_action(self, "quit", self.on_quit_action, ["<Ctrl>q"])
 
@@ -40,9 +39,6 @@ class CoronaInfoApp(Gtk.Application):
             win = MainWindow(application=self)
             self.set_accels_for_action("win.show-help-overlay", ["<Ctrl>question"])
         win.present()
-
-    def on_preferences_action(self, action: Gio.SimpleAction, param):
-        print("PREFERENCES")
 
     def on_about_action(self, action: Gio.SimpleAction, param):
         about = AboutDialog(self.props.active_window)

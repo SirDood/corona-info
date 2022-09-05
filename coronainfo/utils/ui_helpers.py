@@ -1,8 +1,9 @@
-from typing import Callable
+from typing import Callable, Union
+
 from gi.repository import Gio, Gtk
 
 
-def create_action(self: Gtk.Application | Gtk.ApplicationWindow, name: str, callback: Callable, shortcuts: list = None):
+def create_action(self: Union[Gtk.Application, Gtk.ApplicationWindow], name: str, callback: Callable, shortcuts: list = None):
     action = Gio.SimpleAction.new(name, None)
     action.connect("activate", callback)
     self.add_action(action)

@@ -21,6 +21,20 @@
         <child type="end">
           <object class="GtkBox" id="header_end_box">
             <child>
+              <object class="GtkButton" id="toggle_search_btn">
+                <property name="icon-name">system-search-symbolic</property>
+                <property name="tooltip-text">Toggle search entry</property>
+                <property name="action-name">win.toggle-search</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="search_settings_btn">
+                <property name="icon-name">emblem-system-symbolic</property>
+                <property name="tooltip-text">Filter settings</property>
+                <property name="action-name">win.search-settings</property>
+              </object>
+            </child>
+            <child>
               <object class="GtkMenuButton">
                 <property name="icon-name">open-menu-symbolic</property>
                 <property name="menu-model">primary_menu</property>
@@ -34,13 +48,9 @@
       <object class="GtkBox" id="content_box">
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkCenterBox" id="toolbar_box">
-            <property name="margin-top">10</property>
-            <property name="margin-end">10</property>
-            <property name="margin-bottom">10</property>
-            <property name="margin-start">10</property>
-            <child type="center">
-              <object class="GtkBox" id="toolbar_center_box">
+          <object class="GtkSearchBar" id="searchbar">
+            <child>
+              <object class="GtkBox" id="searchbar_box">
                 <property name="spacing">5</property>
                 <child>
                   <object class="GtkSearchEntry" id="search_entry">
@@ -51,23 +61,15 @@
                 </child>
               </object>
             </child>
-            <child type="end">
-              <object class="GtkBox" id="toolbar_end_box">
-                <property name="spacing">5</property>
-                <child>
-                  <object class="GtkButton" id="toggle_columns_btn">
-                    <property name="icon-name">view-dual-symbolic</property>
-                    <property name="tooltip-text">Toggle visibility of individual columns</property>
-                    <property name="action-name">win.toggle-columns</property>
-                  </object>
-                </child>
-              </object>
-            </child>
           </object>
         </child>
         <child>
-          <object class="GtkTreeView" id="table_view">
-            <property name="vexpand">true</property>
+          <object class="GtkScrolledWindow">
+            <child>
+              <object class="GtkTreeView" id="table_view">
+                <property name="vexpand">true</property>
+              </object>
+            </child>
           </object>
         </child>
       </object>
@@ -80,14 +82,19 @@
         <attribute name="label" translatable="yes">_Save data as JSON</attribute>
         <attribute name="action">win.save-data</attribute>
       </item>
+      <submenu id="columns_submenu">
+        <attribute name="label" translatable="yes">_Toggle columns</attribute>
+        <section id="columns_items">
+        </section>
+      </submenu>
+      <item>
+        <attribute name="label" translatable="yes">_Filter settings</attribute>
+        <attribute name="action">win.search-settings</attribute>
+      </item>
     </section>
     <section>
       <item>
-        <attribute name="label" translatable="yes">_Preferences</attribute>
-        <attribute name="action">app.preferences</attribute>
-      </item>
-      <item>
-        <attribute name="label" translatable="yes">_Keyboard Shortcuts</attribute>
+        <attribute name="label" translatable="yes">_Keyboard shortcuts    </attribute>
         <attribute name="action">win.show-help-overlay</attribute>
       </item>
       <item>
