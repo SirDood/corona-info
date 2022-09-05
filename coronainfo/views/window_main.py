@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from gi.repository import Gtk, Gio, GObject
+from gi.repository import GObject, Gio, Gtk
 
+from coronainfo.controllers import AppController
 from coronainfo.models.model_corona import CoronaHeaders
 from coronainfo.utils.ui_helpers import create_action
 
@@ -52,20 +53,11 @@ class MainWindow(Gtk.ApplicationWindow):
             GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE
         )
 
+        self.controller = AppController.get_main_controller()
         self.setup_table()
 
     def setup_table(self):
-        # Set columns
-        for i, header in enumerate(CoronaHeaders.as_tuple()):
-            title = header.replace("_", " ").replace("PER", "/").title()
-
-            column = Gtk.TreeViewColumn(title)
-            column.set_alignment(0.5)
-            column.set_sort_column_id(i)
-            if not i == int(CoronaHeaders.NO):
-                column.set_expand(True)
-
-            self.table.append_column(column)
+        self.controller.set_table(self.table)
 
         # Hide some columns initially
         columns: list[Gtk.TreeViewColumn] = self.table.get_columns()
