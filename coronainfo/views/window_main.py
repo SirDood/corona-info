@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio, GObject
 
 from coronainfo.models.model_corona import CoronaHeaders
 from coronainfo.utils.ui_helpers import create_action
@@ -25,6 +25,7 @@ from coronainfo.utils.ui_helpers import create_action
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = "MainWindow"
 
+    search_btn: Gtk.ToggleButton = Gtk.Template.Child(name="search_btn")
     searchbar: Gtk.SearchBar = Gtk.Template.Child(name="searchbar")
     search_entry: Gtk.SearchEntry = Gtk.Template.Child(name="search_entry")
     table: Gtk.TreeView = Gtk.Template.Child(name="table_view")
@@ -38,17 +39,23 @@ class MainWindow(Gtk.ApplicationWindow):
         self.set_help_overlay(shortcuts_window)
 
         create_action(self, "refresh-data", self.on_refresh_action, ["<Ctrl>r"])
-        create_action(self, "save-data", self.on_save_action)
+        create_action(self, "save-data", self.on_save_action, ["<Ctrl>s"])
+        create_action(self, "settings", self.on_settings_action, ["<Ctrl>comma"])
         create_action(self, "toggle-search", self.on_toggle_search_action)
-        create_action(self, "toggle-columns", self.on_toggle_columns_action)
-        create_action(self, "search-settings", self.on_search_settings_action, ["<Ctrl>period"])
 
         self.searchbar.connect_entry(self.search_entry)
         self.searchbar.set_key_capture_widget(self)
+        self.searchbar.bind_property(
+            "search-mode-enabled",
+            self.search_btn,
+            "active",
+            GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE
+        )
 
         self.setup_table()
 
     def setup_table(self):
+        # Set columns
         for i, header in enumerate(CoronaHeaders.as_tuple()):
             title = header.replace("_", " ").replace("PER", "/").title()
 
@@ -88,5 +95,5 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_toggle_columns_action(self, action: Gio.SimpleAction, param):
         print("TOGGLE COLUMNS")
 
-    def on_search_settings_action(self, action: Gio.SimpleAction, param):
-        print("SEARCH SETTINGS")
+    def on_settings_action(self, action: Gio.SimpleAction, param):
+        print("SETTINGS")
