@@ -29,6 +29,7 @@ configure_file(
 coronainfo_sources = [
   '__init__.py',
   'app.py',
+  'enums.py'
 ]
 
 install_subdir('utils', install_dir: moduledir)
