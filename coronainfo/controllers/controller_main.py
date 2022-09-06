@@ -9,9 +9,13 @@ from coronainfo.utils.ui_helpers import run_in_thread
 
 
 class MainController(GObject.Object):
-    __gtype_name__ = "MainController"
+    REFRESH_STARTED = "refresh-started"
+    REFRESH_FINISHED = "refresh-finished"
 
     def __init__(self):
+        super().__init__()
+        self._setup_signals()
+
         self.table: Gtk.TreeView = None
 
         field_types = (field.type for field in CoronaData.get_fields())
@@ -22,18 +26,20 @@ class MainController(GObject.Object):
         self.is_refreshing = False
 
     def start_populate(self):
-        task = run_in_thread(self._populate_data)
+        run_in_thread(self._populate_data)
 
     def on_refresh(self):
         if not self.is_refreshing:
             self.model.clear()
-            task = run_in_thread(self._populate_data, self.on_refresh_finished, func_args=(False,))
+            run_in_thread(self._populate_data, self.on_refresh_finished, func_args=(False,))
+            self.emit(self.REFRESH_STARTED)
             self.is_refreshing = True
         else:
             print("[WARNING]: Refresh in progress")
 
     def on_refresh_finished(self):
         self.is_refreshing = False
+        self.emit(self.REFRESH_FINISHED)
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -137,3 +143,20 @@ class MainController(GObject.Object):
             return clean_value
 
         return result
+
+    def _setup_signals(self):
+        GObject.signal_new(
+            self.REFRESH_STARTED,
+            GObject.Object,
+            GObject.SignalFlags.RUN_LAST,
+            GObject.TYPE_BOOLEAN,
+            []
+        )
+
+        GObject.signal_new(
+            self.REFRESH_FINISHED,
+            GObject.Object,
+            GObject.SignalFlags.RUN_LAST,
+            GObject.TYPE_BOOLEAN,
+            []
+        )

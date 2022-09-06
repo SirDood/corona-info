@@ -18,6 +18,10 @@
                 <property name="action-name">win.refresh-data</property>
               </object>
             </child>
+            <child>
+              <object class="GtkSpinner" id="spinner">
+              </object>
+            </child>
           </object>
         </child>
         <child type="end">
@@ -82,7 +86,7 @@
     </section>
     <section>
       <item>
-        <attribute name="label" translatable="yes">_Keyboard shortcuts    </attribute>
+        <attribute name="label" translatable="yes">_Keyboard shortcuts</attribute>
         <attribute name="action">win.show-help-overlay</attribute>
       </item>
       <item>

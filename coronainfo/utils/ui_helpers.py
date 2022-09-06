@@ -8,12 +8,22 @@ def run_in_thread(func: Callable, on_finish: Callable = None,
                   cancellable: Gio.Cancellable = Gio.Cancellable()) -> Gio.Task:
     # TODO: figure out better ways to do this lmao
     def func_wrapper(task: Gio.Task, arg2, arg3, cancellable: Gio.Cancellable = None):
-        print(f"[WORKER] Running function: {func.__name__}{func_args}")
-        func(*func_args)
+        func_name = func.__name__
+        print(f"[WORKER] Running function: {func_name}{func_args}")
+
+        try:
+            func(*func_args)
+        except Exception as err:
+            print(f"An error has occurred while running '{func_name}' in thread:", err)
 
     def on_finish_wrapper(task: Gio.Task, status: GObject.ParamSpecBoolean):
-        print(f"[WORKER] Running on_finish: {on_finish.__name__}{on_finish_args}")
-        on_finish(*on_finish_args)
+        on_finish_name = on_finish.__name__
+        print(f"[WORKER] Running on_finish: {on_finish_name}{on_finish_args}")
+
+        try:
+            on_finish(*on_finish_args)
+        except Exception as err:
+            print(f"An error has occurred while running '{on_finish_name}' in thread:", err)
 
     task: Gio.Task = Gio.Task.new(None, cancellable, None, None)
     task.set_return_on_cancel(False)

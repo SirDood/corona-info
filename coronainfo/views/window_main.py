@@ -26,6 +26,8 @@ from coronainfo.utils.ui_helpers import create_action
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = "MainWindow"
 
+    refresh_btn: Gtk.Button = Gtk.Template.Child(name="refresh_btn")
+    spinner: Gtk.Spinner = Gtk.Template.Child(name="spinner")
     search_btn: Gtk.ToggleButton = Gtk.Template.Child(name="search_btn")
     searchbar: Gtk.SearchBar = Gtk.Template.Child(name="searchbar")
     search_entry: Gtk.SearchEntry = Gtk.Template.Child(name="search_entry")
@@ -58,6 +60,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.controller.start_populate()
         self.setup_table()
 
+        self.controller.connect(self.controller.REFRESH_STARTED, self.on_refresh_started)
+        self.controller.connect(self.controller.REFRESH_FINISHED, self.on_refresh_finished)
+
     def setup_table(self):
         # Hide some columns initially
         columns: list[Gtk.TreeViewColumn] = self.table.get_columns()
@@ -72,11 +77,18 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_refresh_action(self, action: Gio.SimpleAction, param):
         self.controller.on_refresh()
 
+    def on_refresh_started(self, controller):
+        self.refresh_btn.set_sensitive(False)
+        self.spinner.start()
+
+    def on_refresh_finished(self, controller):
+        self.spinner.stop()
+        self.refresh_btn.set_sensitive(True)
+
     def on_save_action(self, action: Gio.SimpleAction, param):
         print("SAVE DATA")
 
     def on_toggle_search_action(self, action: Gio.SimpleAction, param):
-        print("TOGGLE SEARCH")
         search_mode = self.searchbar.get_search_mode()
         self.searchbar.set_search_mode(not search_mode)
 
