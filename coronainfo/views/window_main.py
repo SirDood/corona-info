@@ -70,7 +70,6 @@ class MainWindow(Gtk.ApplicationWindow):
         columns[int(CoronaHeaders.POPULATION)].set_visible(False)
 
     def on_refresh_action(self, action: Gio.SimpleAction, param):
-        print("REFRESH")
         self.controller.on_refresh()
 
     def on_save_action(self, action: Gio.SimpleAction, param):

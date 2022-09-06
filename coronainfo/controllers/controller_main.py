@@ -19,12 +19,21 @@ class MainController(GObject.Object):
         self.country_filter = ""
         self.set_filter(self.country_filter)
 
+        self.is_refreshing = False
+
     def start_populate(self):
-        run_in_thread(self._populate_data)
+        task = run_in_thread(self._populate_data)
 
     def on_refresh(self):
-        self.model.clear()
-        run_in_thread(self._populate_data, func_args=(False,))
+        if not self.is_refreshing:
+            self.model.clear()
+            task = run_in_thread(self._populate_data, self.on_refresh_finished, func_args=(False,))
+            self.is_refreshing = True
+        else:
+            print("[WARNING]: Refresh in progress")
+
+    def on_refresh_finished(self):
+        self.is_refreshing = False
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -68,6 +77,7 @@ class MainController(GObject.Object):
         return self.country_filter.lower() in country.lower()
 
     def _populate_data(self, use_cache: bool = True):
+        self.table.set_model(None)
         for row in self._get_data(use_cache=use_cache):
             self.model.append(row)
         self.set_filter(self.country_filter)
