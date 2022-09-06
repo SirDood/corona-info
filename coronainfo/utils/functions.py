@@ -22,7 +22,7 @@ def is_float(text: str) -> bool:
     return bool(match)
 
 
-def convert_to_num(text: str) -> int | float | str:
+def convert_to_num(text: str) -> typing.Union[int, float, str]:
     """
     Converts a string into either an int or float, depending on the string given. Returns the original string if it
     is not a number.

@@ -45,7 +45,7 @@ class BaseData:
                     f"{field.type}"
                 )
 
-    def __getitem__(self, item: int | str):
+    def __getitem__(self, item: typing.Union[int, str]):
         # Make this accessible by subscripting.
         # Example: bruh_data[0] or bruh_data["attribute"]
         if type(item) is int:
