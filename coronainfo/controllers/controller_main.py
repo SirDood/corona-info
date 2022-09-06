@@ -48,6 +48,7 @@ class MainController(GObject.Object):
         for i, header in enumerate(CoronaHeaders.as_tuple()):
             title = header.replace("_", " ").replace("PER", "/").title()
             renderer = Gtk.CellRendererText()
+            renderer.set_property("height", 30)
 
             column = Gtk.TreeViewColumn(title, renderer, text=i)
             column.set_cell_data_func(renderer, self.cell_data_func, func_data=i)
@@ -65,7 +66,19 @@ class MainController(GObject.Object):
 
         value = model.get(tree_iter, data)[0]
         if isinstance(value, int):
-            renderer.set_property("text", f"{value:,}")
+            display = f"{value:,}"
+            if "NEW" in CoronaHeaders.as_tuple()[data]:
+                display = "+" + display
+            renderer.set_property("text", display)
+
+        if data == int(CoronaHeaders.NEW_CASES):
+            renderer.set_property("foreground", "rgb(255, 145, 0)")
+
+        if data == int(CoronaHeaders.NEW_DEATHS):
+            renderer.set_property("foreground", "rgb(220, 0, 0)")
+
+        if data == int(CoronaHeaders.NEW_RECOVERED):
+            renderer.set_property("foreground", "rgb(0, 160, 0)")
 
     def set_filter(self, text: str):
         if self.table:
