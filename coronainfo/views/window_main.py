@@ -80,6 +80,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def on_refresh_started(self, controller):
         self.refresh_btn.set_sensitive(False)
+        self.searchbar.set_visible(False)
         self.table.set_visible(False)
         self.content_box.set_valign(Gtk.Align.CENTER)
         self.spinner.set_visible(True)
@@ -90,6 +91,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.spinner.set_visible(False)
         self.content_box.set_valign(Gtk.Align.FILL)
         self.table.set_visible(True)
+        self.searchbar.set_visible(True)
         self.refresh_btn.set_sensitive(True)
 
     def on_save_action(self, action: Gio.SimpleAction, param):
