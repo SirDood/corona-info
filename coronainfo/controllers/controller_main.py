@@ -5,6 +5,7 @@ from coronainfo.enums import Paths
 from coronainfo.models import CoronaData, CoronaHeaders
 from coronainfo.utils.cache import cache_json, get_cache_json
 from coronainfo.utils.functions import convert_to_num
+from coronainfo.utils.ui_helpers import run_in_thread
 
 
 class MainController(GObject.Object):
@@ -19,18 +20,11 @@ class MainController(GObject.Object):
         self.set_filter(self.country_filter)
 
     def start_populate(self):
-        # TODO: figure out how to do this in a thread with GTK
-        self.load_data()
-
-    def load_data(self):
-        self._populate_data()
+        run_in_thread(self._populate_data)
 
     def on_refresh(self):
-        # TODO: figure out how to do this in a thread with GTK
-        self.refresh_data()
-
-    def refresh_data(self):
-        self._populate_data(use_cache=False)
+        self.model.clear()
+        run_in_thread(self._populate_data, func_args=(False,))
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -74,7 +68,6 @@ class MainController(GObject.Object):
         return self.country_filter.lower() in country.lower()
 
     def _populate_data(self, use_cache: bool = True):
-        self.model.clear()
         for row in self._get_data(use_cache=use_cache):
             self.model.append(row)
         self.set_filter(self.country_filter)
