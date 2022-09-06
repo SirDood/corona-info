@@ -31,6 +31,7 @@ class MainWindow(Gtk.ApplicationWindow):
     search_btn: Gtk.ToggleButton = Gtk.Template.Child(name="search_btn")
     searchbar: Gtk.SearchBar = Gtk.Template.Child(name="searchbar")
     search_entry: Gtk.SearchEntry = Gtk.Template.Child(name="search_entry")
+    content_box: Gtk.Box = Gtk.Template.Child(name="content_box")
     table: Gtk.TreeView = Gtk.Template.Child(name="table_view")
 
     def __init__(self, **kwargs):
@@ -47,7 +48,7 @@ class MainWindow(Gtk.ApplicationWindow):
         create_action(self, "toggle-search", self.on_toggle_search_action)
 
         self.searchbar.connect_entry(self.search_entry)
-        self.searchbar.set_key_capture_widget(self.table)
+        self.searchbar.set_key_capture_widget(self)
         self.searchbar.bind_property(
             "search-mode-enabled",
             self.search_btn,
@@ -79,10 +80,16 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def on_refresh_started(self, controller):
         self.refresh_btn.set_sensitive(False)
+        self.table.set_visible(False)
+        self.content_box.set_valign(Gtk.Align.CENTER)
+        self.spinner.set_visible(True)
         self.spinner.start()
 
     def on_refresh_finished(self, controller):
         self.spinner.stop()
+        self.spinner.set_visible(False)
+        self.content_box.set_valign(Gtk.Align.FILL)
+        self.table.set_visible(True)
         self.refresh_btn.set_sensitive(True)
 
     def on_save_action(self, action: Gio.SimpleAction, param):

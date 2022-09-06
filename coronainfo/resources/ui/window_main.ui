@@ -18,10 +18,6 @@
                 <property name="action-name">win.refresh-data</property>
               </object>
             </child>
-            <child>
-              <object class="GtkSpinner" id="spinner">
-              </object>
-            </child>
           </object>
         </child>
         <child type="end">
@@ -65,8 +61,16 @@
             <child>
               <object class="GtkTreeView" id="table_view">
                 <property name="vexpand">true</property>
+                <property name="enable-search">false</property>
               </object>
             </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSpinner" id="spinner">
+            <property name="visible">false</property>
+            <property name="height-request">40</property>
+            <property name="spinning">true</property>
           </object>
         </child>
       </object>
