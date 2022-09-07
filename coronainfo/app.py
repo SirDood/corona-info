@@ -21,13 +21,14 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Gio
 
+from coronainfo.enums import App
 from coronainfo.views import MainWindow, AboutDialog
 from coronainfo.utils.ui_helpers import create_action
 
 
 class CoronaInfoApp(Gtk.Application):
     def __init__(self):
-        super().__init__(application_id="com.izzthedude.CoronaInfo",
+        super().__init__(application_id=App.ID,
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
 
         create_action(self, "about", self.on_about_action)

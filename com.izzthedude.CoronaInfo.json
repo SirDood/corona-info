@@ -11,7 +11,10 @@
     "--device=dri",
     "--socket=wayland",
     "--socket=session-bus",
-    "--filesystem=xdg-run/gvfsd"
+    "--filesystem=xdg-run/gvfsd",
+    "--filesystem=~/.cache/com.izzthedude.CoronaInfo:create",
+    "--filesystem=~/.themes:ro",
+    "--filesystem=/usr/share/themes:ro"
   ],
   "cleanup": [
     "/include",

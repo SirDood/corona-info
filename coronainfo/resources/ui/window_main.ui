@@ -2,7 +2,6 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <template class="MainWindow" parent="GtkApplicationWindow">
-    <property name="title">Corona Info</property>
     <property name="default-width">1200</property>
     <property name="default-height">800</property>
     <child type="titlebar">

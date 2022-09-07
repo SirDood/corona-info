@@ -17,6 +17,8 @@
 
 from gi.repository import Gtk
 
+from coronainfo.enums import App
+
 
 class AboutDialog(Gtk.AboutDialog):
     def __init__(self, parent):
@@ -24,12 +26,12 @@ class AboutDialog(Gtk.AboutDialog):
         self.set_modal(True)
         self.set_transient_for(parent)
 
-        self.set_program_name("Corona Info")
-        self.set_version("0.1.0")
-        self.set_logo_icon_name("com.izzthedude.CoronaInfo")
+        self.set_program_name(App.NAME)
+        self.set_version(App.VERSION)
+        self.set_logo_icon_name(App.ID)
 
         self.set_authors(["Izzat Z."])
         self.set_copyright("2022 Izzat Z.")
         self.set_license_type(Gtk.License.GPL_3_0)
-        self.set_website("https://github.com/izzthedude/corona-info")
+        self.set_website(App.WEBSITE)
         self.set_website_label("GitHub")

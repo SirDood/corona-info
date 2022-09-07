@@ -17,6 +17,7 @@
 
 from gi.repository import GObject, Gio, Gtk
 
+from coronainfo.enums import App
 from coronainfo.controllers import AppController
 from coronainfo.models.model_corona import CoronaHeaders
 from coronainfo.utils.ui_helpers import create_action
@@ -36,6 +37,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.set_title(App.NAME)
 
         # Set the shortcuts window aka help overlay
         builder: Gtk.Builder = Gtk.Builder.new_from_resource("/coronainfo/ui/help-overlay")
