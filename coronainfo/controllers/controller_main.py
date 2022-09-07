@@ -9,8 +9,9 @@ from coronainfo.utils.ui_helpers import run_in_thread
 
 
 class MainController(GObject.Object):
-    REFRESH_STARTED = "refresh-started"
-    REFRESH_FINISHED = "refresh-finished"
+    POPULATE_STARTED = "velvet-massager"
+    POPULATE_FINISHED = "cube-helpless"
+    PROGRESS_MESSAGE = "absurd-frosted"
 
     def __init__(self):
         super().__init__()
@@ -23,23 +24,21 @@ class MainController(GObject.Object):
         self.country_filter = ""
         self.set_filter(self.country_filter)
 
-        self.is_refreshing = False
+        self.is_populating = False
 
     def start_populate(self):
-        run_in_thread(self._populate_data)
+        run_in_thread(self._populate_data, self.on_populate_finished)
 
     def on_refresh(self):
-        if not self.is_refreshing:
+        if not self.is_populating:
             self.model.clear()
-            run_in_thread(self._populate_data, self.on_refresh_finished, func_args=(False,))
-            self.emit(self.REFRESH_STARTED)
-            self.is_refreshing = True
+            run_in_thread(self._populate_data, self.on_populate_finished, func_args=(False,))
         else:
             print("[WARNING]: Refresh in progress")
 
-    def on_refresh_finished(self):
-        self.is_refreshing = False
-        self.emit(self.REFRESH_FINISHED)
+    def on_populate_finished(self):
+        self.is_populating = False
+        self.emit(self.POPULATE_FINISHED)
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -95,7 +94,14 @@ class MainController(GObject.Object):
         country = model[tree_iter][int(CoronaHeaders.COUNTRY)]
         return self.country_filter.lower() in country.lower()
 
+    def update_progress(self, message: str):
+        # TODO: look into fixing the 'Trying to snapshot XXX without a current allocation' error
+        self.emit(self.PROGRESS_MESSAGE, message)
+
     def _populate_data(self, use_cache: bool = True):
+        self.emit(self.POPULATE_STARTED)
+        self.is_populating = True
+
         self.table.set_model(None)
         for row in self._get_data(use_cache=use_cache):
             self.model.append(row)
@@ -105,9 +111,11 @@ class MainController(GObject.Object):
         cache_file = Paths.CACHE
 
         if not cache_file.exists() or not use_cache:
+            self.update_progress("Fetching data...")
             dataset = self._fetch_data()
             cache_json(cache_file.name, [row.as_dict() for row in dataset])
 
+        self.update_progress("Reading data...")
         json_data = get_cache_json(cache_file.name)
         result = map(lambda row: CoronaData(**row), json_data)
         return result
@@ -116,13 +124,13 @@ class MainController(GObject.Object):
         fetch_url: Gio.File = Gio.File.new_for_uri("https://www.worldometers.info/coronavirus/")
         try:
             success, content, etag = fetch_url.load_contents(None)
-            print("Successfully fetched data")
 
             # Parse html content and find the table for today
             soup = BeautifulSoup(content, "html.parser")
             table = soup.find(id="main_table_countries_today")
             table_body = table.find("tbody")
 
+            self.update_progress("Parsing HTML...")
             result = self._parse_table_html(table_body)
             return result
 
@@ -159,17 +167,25 @@ class MainController(GObject.Object):
 
     def _setup_signals(self):
         GObject.signal_new(
-            self.REFRESH_STARTED,
-            GObject.Object,
+            self.POPULATE_STARTED,  # Signal message
+            self,  # A Python GObject instance or type that the signal is associated with
+            GObject.SignalFlags.RUN_LAST,  # Signal flags
+            GObject.TYPE_BOOLEAN,  # Return type of the signal handler
+            []  # Parameter types
+        )
+
+        GObject.signal_new(
+            self.POPULATE_FINISHED,
+            self,
             GObject.SignalFlags.RUN_LAST,
             GObject.TYPE_BOOLEAN,
             []
         )
 
         GObject.signal_new(
-            self.REFRESH_FINISHED,
-            GObject.Object,
+            self.PROGRESS_MESSAGE,
+            self,
             GObject.SignalFlags.RUN_LAST,
             GObject.TYPE_BOOLEAN,
-            []
+            [str]
         )
