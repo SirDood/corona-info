@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=coronainfo
+Name=Corona Info
 Exec=coronainfo
 Icon=com.izzthedude.CoronaInfo
 Terminal=false

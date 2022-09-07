@@ -12,7 +12,7 @@
     "--socket=wayland",
     "--socket=session-bus",
     "--filesystem=xdg-run/gvfsd",
-    "--filesystem=~/.cache/com.izzthedude.CoronaInfo:create",
+    "--filesystem=xdg-cache",
     "--filesystem=~/.themes:ro",
     "--filesystem=/usr/share/themes:ro"
   ],

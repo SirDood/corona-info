@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 
@@ -13,6 +14,8 @@ class Paths:
     RESOURCES = SOURCE_DIR / "resources"
     UI = RESOURCES / "ui"
 
-    CACHE_DIR = Path.home() / ".cache" / "com.izzthedude.CoronaInfo"
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    _xdg_cache = os.environ.get("XDG_CACHE_HOME")
+    CACHE_DIR = Path(_xdg_cache) if _xdg_cache else Path.home() / ".cache" / App.ID
+    if not CACHE_DIR.exists():
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
     CACHE = CACHE_DIR / "data.json"
