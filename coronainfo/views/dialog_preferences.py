@@ -1,8 +1,8 @@
-from gi.repository import Gtk, GObject
+from gi.repository import Adw, GObject, Gtk
 
 
 @Gtk.Template(resource_path="/coronainfo/ui/preferences-dialog")
-class PreferencesDialog(Gtk.Window):
+class PreferencesDialog(Adw.PreferencesWindow):
     __gtype_name__ = "PreferencesDialog"
 
     def __init__(self, parent: GObject.Object):
