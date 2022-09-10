@@ -21,6 +21,7 @@ from coronainfo.controllers import AppController
 from coronainfo.enums import App
 from coronainfo.models.model_corona import CoronaHeaders
 from coronainfo.utils.ui_helpers import create_action
+from coronainfo.views.dialog_preferences import PreferencesDialog
 
 
 @Gtk.Template(resource_path="/coronainfo/ui/main-window")
@@ -110,7 +111,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.searchbar.set_search_mode(not search_mode)
 
     def on_preferences_action(self, action: Gio.SimpleAction, param):
-        print("PREFERENCES")
+        settings = PreferencesDialog(self)
+        settings.show()
 
     @Gtk.Template.Callback()
     def on_search(self, entry: Gtk.SearchEntry):

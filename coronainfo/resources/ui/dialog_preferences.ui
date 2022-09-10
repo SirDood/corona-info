@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <template class="PreferencesDialog" parent="GtkWindow">
+    <property name="default-width">800</property>
+    <property name="default-height">850</property>
+    <property name="title">Preferences</property>
+    <child>
+      <object class="GtkScrolledWindow">
+        <child>
+          <object class="GtkBox" id="settings_box">
+            <property name="halign">center</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="label">Preferences</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>
