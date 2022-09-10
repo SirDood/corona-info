@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="coronainfo/ui">
+    <file alias="main-window">resources/ui/window_main.ui</file>
+    <file alias="help-overlay">resources/ui/help-overlay.ui</file>
+  </gresource>
+</gresources>
+
