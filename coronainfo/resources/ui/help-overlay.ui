@@ -17,8 +17,8 @@
             </child>
             <child>
               <object class="GtkShortcutsShortcut">
-                <property name="title" translatable="yes" context="shortcut window">Show settings</property>
-                <property name="action-name">win.settings</property>
+                <property name="title" translatable="yes" context="shortcut window">Show preferences</property>
+                <property name="action-name">win.preferences</property>
               </object>
             </child>
             <child>

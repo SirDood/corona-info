@@ -82,12 +82,12 @@
         <attribute name="label" translatable="yes">_Save data as JSON</attribute>
         <attribute name="action">win.save-data</attribute>
       </item>
-      <item>
-        <attribute name="label" translatable="yes">_Settings</attribute>
-        <attribute name="action">win.settings</attribute>
-      </item>
     </section>
     <section>
+      <item>
+        <attribute name="label" translatable="yes">_Preferences</attribute>
+        <attribute name="action">win.preferences</attribute>
+      </item>
       <item>
         <attribute name="label" translatable="yes">_Keyboard shortcuts    </attribute>
         <attribute name="action">win.show-help-overlay</attribute>

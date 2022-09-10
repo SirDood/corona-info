@@ -47,7 +47,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         create_action(self, "refresh-data", self.on_refresh_action, ["<Ctrl>r"])
         create_action(self, "save-data", self.on_save_action, ["<Ctrl>s"])
-        create_action(self, "settings", self.on_settings_action, ["<Ctrl>comma"])
+        create_action(self, "preferences", self.on_preferences_action, ["<Ctrl>comma"])
         create_action(self, "toggle-search", self.on_toggle_search_action)
 
         self.searchbar.connect_entry(self.search_entry)
@@ -109,8 +109,8 @@ class MainWindow(Gtk.ApplicationWindow):
         search_mode = self.searchbar.get_search_mode()
         self.searchbar.set_search_mode(not search_mode)
 
-    def on_settings_action(self, action: Gio.SimpleAction, param):
-        print("SETTINGS")
+    def on_preferences_action(self, action: Gio.SimpleAction, param):
+        print("PREFERENCES")
 
     @Gtk.Template.Callback()
     def on_search(self, entry: Gtk.SearchEntry):
