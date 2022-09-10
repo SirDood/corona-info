@@ -112,6 +112,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def on_preferences_action(self, action: Gio.SimpleAction, param):
         settings = PreferencesDialog(self)
+        settings.set_columns(self.table.get_columns())
         settings.show()
 
     @Gtk.Template.Callback()
