@@ -28,12 +28,18 @@ from coronainfo.utils.ui_helpers import create_action
 
 
 class CoronaInfoApp(Gtk.Application):
+    _settings = Gio.Settings(schema_id=App.ID)
+
     def __init__(self):
         super().__init__(application_id=App.ID,
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
 
         create_action(self, "about", self.on_about_action)
         create_action(self, "quit", self.on_quit_action, ["<Ctrl>q"])
+
+    @classmethod
+    def get_schema(cls) -> Gio.Settings:
+        return cls._settings
 
     def do_activate(self):
         win = self.props.active_window
@@ -48,6 +54,10 @@ class CoronaInfoApp(Gtk.Application):
 
     def on_quit_action(self, action: Gio.SimpleAction, param):
         self.quit()
+
+
+def get_schema() -> Gio.Settings:
+    return CoronaInfoApp.get_schema()
 
 
 def main(version):

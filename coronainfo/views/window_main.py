@@ -17,9 +17,9 @@
 
 from gi.repository import GObject, Gio, Gtk
 
+from coronainfo import app
 from coronainfo.controllers import AppController
 from coronainfo.enums import App
-from coronainfo.models.model_corona import CoronaHeaders
 from coronainfo.utils.ui_helpers import create_action
 from coronainfo.views.dialog_preferences import PreferencesDialog
 
@@ -63,23 +63,11 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.controller = AppController.get_main_controller()
         self.controller.set_table(self.table)
-        self.setup_table()
 
         self.controller.connect(self.controller.POPULATE_STARTED, self.on_populate_started)
         self.controller.connect(self.controller.POPULATE_FINISHED, self.on_populate_finished)
         self.controller.connect(self.controller.PROGRESS_MESSAGE, self.on_progress_emitted)
         self.controller.start_populate()
-
-    def setup_table(self):
-        # Hide some columns initially
-        columns: list[Gtk.TreeViewColumn] = self.table.get_columns()
-        columns[int(CoronaHeaders.TOTAL_RECOVERED)].set_visible(False)
-        columns[int(CoronaHeaders.SERIOUS_CASES)].set_visible(False)
-        columns[int(CoronaHeaders.TOTAL_CASES_PER_1M)].set_visible(False)
-        columns[int(CoronaHeaders.DEATHS_PER_1M)].set_visible(False)
-        columns[int(CoronaHeaders.TOTAL_TESTS)].set_visible(False)
-        columns[int(CoronaHeaders.TESTS_PER_1M)].set_visible(False)
-        columns[int(CoronaHeaders.POPULATION)].set_visible(False)
 
     def on_populate_started(self, controller):
         self.refresh_btn.set_sensitive(False)
@@ -121,7 +109,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.controller.set_filter(entry.get_text())
 
     def _init_settings(self):
-        settings = Gio.Settings(schema_id=App.ID)
+        settings = app.get_schema()
 
         settings.bind(
             "window-width",

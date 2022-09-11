@@ -47,3 +47,8 @@ def create_action(self: Union[Gtk.Application, Gtk.ApplicationWindow], name: str
             origin = "win"
 
         app.set_accels_for_action(f"{origin}.{name}", shortcuts)
+
+
+def reset_gschema(settings: Gio.Settings):
+    for key in settings.keys():
+        settings.reset(key)
