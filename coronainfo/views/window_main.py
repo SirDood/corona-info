@@ -39,6 +39,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._init_settings()
         self.set_title(self.TITLE)
 
         # Set the shortcuts window aka help overlay
@@ -118,3 +119,27 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_search(self, entry: Gtk.SearchEntry):
         self.controller.set_filter(entry.get_text())
+
+    def _init_settings(self):
+        settings = Gio.Settings(schema_id=App.ID)
+
+        settings.bind(
+            "window-width",
+            self,
+            "default-width",
+            Gio.SettingsBindFlags.DEFAULT
+        )
+
+        settings.bind(
+            "window-height",
+            self,
+            "default-height",
+            Gio.SettingsBindFlags.DEFAULT
+        )
+
+        settings.bind(
+            "window-maximized",
+            self,
+            "maximized",
+            Gio.SettingsBindFlags.DEFAULT
+        )
