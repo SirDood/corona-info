@@ -19,3 +19,5 @@ class Paths:
     if not CACHE_DIR.exists():
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
     CACHE = CACHE_DIR / "data.json"
+
+    DOWNLOADS_DIR = Path.home() / "Downloads"

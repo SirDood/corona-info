@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup, Tag
 from gi.repository import GLib, GObject, Gio, Gtk
 
 from coronainfo import app
-from coronainfo.enums import Paths
+from coronainfo.enums import App, Paths
 from coronainfo.models import CoronaData, CoronaHeaders
 from coronainfo.utils.cache import cache_json, get_cache_json
 from coronainfo.utils.functions import convert_to_num
@@ -30,6 +30,10 @@ class MainController(GObject.Object):
     def start_populate(self):
         run_in_thread(self._populate_data, self.on_populate_finished)
 
+    def on_populate_finished(self):
+        self.is_populating = False
+        self.emit(self.POPULATE_FINISHED)
+
     def on_refresh(self):
         if not self.is_populating:
             self.model.clear()
@@ -37,9 +41,59 @@ class MainController(GObject.Object):
         else:
             print("[WARNING]: Refresh in progress")
 
-    def on_populate_finished(self):
-        self.is_populating = False
-        self.emit(self.POPULATE_FINISHED)
+    def on_save(self, window: Gtk.ApplicationWindow):
+        self._dialog = Gtk.FileChooserNative(
+            title="Save File as",
+            transient_for=window,
+            action=Gtk.FileChooserAction.SAVE,
+            accept_label="_Save",
+            cancel_label="_Cancel"
+        )
+
+        downloads_dir = Gio.File.new_for_path(str(Paths.DOWNLOADS_DIR))
+        file_name = f"{App.NAME.replace(' ', '')}_data.json"
+        self._dialog.set_current_name(file_name)
+        self._dialog.set_current_folder(downloads_dir)
+        self._dialog.connect("response", self.on_save_response)
+        self._dialog.show()
+
+    def on_save_response(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType):
+        if response == Gtk.ResponseType.ACCEPT:
+            dest_file: Gio.File = dialog.get_file()
+            try:
+                src_file: Gio.File = Gio.File.new_for_path(str(Paths.CACHE))
+                src_file.load_contents_async(None, self.on_read_cache_complete, dest_file)
+
+            except GLib.Error as err:
+                print("An error has occurred while trying to read from cache while saving:", err)
+
+        self._dialog.destroy()
+
+    def on_read_cache_complete(self, file: Gio.File, result: Gio.AsyncResult, dest_file: Gio.File):
+        try:
+            contents = file.load_contents_finish(result)[1]
+            contents_bytes = GLib.Bytes.new(contents)
+            dest_file.replace_contents_bytes_async(
+                contents_bytes,
+                None,
+                False,
+                Gio.FileCreateFlags.NONE,
+                None,
+                self.on_write_file_complete
+            )
+
+        except GLib.Error as err:
+            print("An error has occurred while trying to write data:", err)
+
+    def on_write_file_complete(self, file: Gio.File, result: Gio.AsyncResult):
+        result = file.replace_contents_finish(result)
+        path = file.get_path()
+
+        if not result:
+            print(f"Unable to save data to {path}")
+            return
+
+        print(f"Successfully saved data to {path}")
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table

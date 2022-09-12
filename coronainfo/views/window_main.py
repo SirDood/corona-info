@@ -93,7 +93,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.controller.on_refresh()
 
     def on_save_action(self, action: Gio.SimpleAction, param):
-        print("SAVE DATA")
+        self.controller.on_save(self)
 
     def on_toggle_search_action(self, action: Gio.SimpleAction, param):
         search_mode = self.searchbar.get_search_mode()
