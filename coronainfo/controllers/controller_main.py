@@ -56,8 +56,10 @@ class MainController(GObject.Object):
             cancel_label="_Cancel"
         )
 
+        name = App.NAME.replace(' ', '')
+        date = datetime.fromisoformat(app.get_settings().last_fetched).date()
+        file_name = f"{name}_{date}.json"
         downloads_dir = Gio.File.new_for_path(str(Paths.DOWNLOADS_DIR))
-        file_name = f"{App.NAME.replace(' ', '')}_data.json"
         self._dialog.set_current_name(file_name)
         self._dialog.set_current_folder(downloads_dir)
         self._dialog.connect("response", self.on_save_response)

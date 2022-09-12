@@ -28,4 +28,5 @@ class Paths:
 
 class Date:
     RAW_FORMAT = "%Y-%m-%d %H:%M:%S"
+    FILE_FORMAT = "%Y-%m-%d-%H-%M-%S"
     DISPLAY_FORMAT = "%-d %b %H:%M"
