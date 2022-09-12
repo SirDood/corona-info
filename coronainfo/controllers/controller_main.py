@@ -1,12 +1,14 @@
+from datetime import datetime
+
 from bs4 import BeautifulSoup, Tag
 from gi.repository import GLib, GObject, Gio, Gtk
 
 from coronainfo import app
-from coronainfo.enums import App, Paths
+from coronainfo.enums import App, Date, Paths
 from coronainfo.models import CoronaData, CoronaHeaders
-from coronainfo.utils.files import write_json, get_json
+from coronainfo.utils.files import get_json, write_json
 from coronainfo.utils.functions import convert_to_num
-from coronainfo.utils.ui_helpers import run_in_thread
+from coronainfo.utils.ui_helpers import run_in_thread, evaluate_title
 
 
 class MainController(GObject.Object):
@@ -33,6 +35,10 @@ class MainController(GObject.Object):
     def on_populate_finished(self):
         self.is_populating = False
         self.emit(self.POPULATE_FINISHED)
+
+        # Update title
+        display = evaluate_title(app.get_settings())
+        self.update_progress(display)
 
     def on_refresh(self):
         if not self.is_populating:
@@ -170,6 +176,11 @@ class MainController(GObject.Object):
             self.update_progress("Fetching data...")
             dataset = self._fetch_data()
             write_json(cache_file, [row.as_dict() for row in dataset])
+
+            # Update last_fetched settings
+            today = datetime.now().strftime(Date.RAW_FORMAT)
+            settings = app.get_settings()
+            settings.last_fetched = today
 
         self.update_progress("Reading data...")
         json_data = get_json(cache_file)

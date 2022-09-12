@@ -24,3 +24,8 @@ class Paths:
     SETTINGS_JSON = DATA_DIR / "settings.json"
 
     DOWNLOADS_DIR = Path.home() / "Downloads"
+
+
+class Date:
+    RAW_FORMAT = "%Y-%m-%d %H:%M:%S"
+    DISPLAY_FORMAT = "%-d %b %H:%M"

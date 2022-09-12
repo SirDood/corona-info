@@ -26,7 +26,7 @@ from coronainfo.enums import App, Paths
 from coronainfo.settings import Settings
 from coronainfo.views import MainWindow, AboutDialog
 from coronainfo.utils.ui_helpers import create_action
-from coronainfo.utils.files import get_json
+from coronainfo.utils.files import get_json, write_json
 
 
 class CoronaInfoApp(Gtk.Application):
@@ -40,6 +40,9 @@ class CoronaInfoApp(Gtk.Application):
         create_action(self, "about", self.on_about_action)
         create_action(self, "quit", self.on_quit_action, ["<Ctrl>q"])
 
+        self.connect("activate", self.on_activate)
+        self.connect("shutdown", self.on_shutdown)
+
     @classmethod
     def get_schema(cls) -> Gio.Settings:
         return cls._schema
@@ -48,12 +51,16 @@ class CoronaInfoApp(Gtk.Application):
     def get_settings(cls) -> Gio.Settings:
         return cls._settings
 
-    def do_activate(self):
+    def on_activate(self, app):
         win = self.props.active_window
         if not win:
             win = MainWindow(application=self)
             self.set_accels_for_action("win.show-help-overlay", ["<Ctrl>question"])
         win.present()
+
+    def on_shutdown(self, app):
+        print("Saving app settings to:", Paths.SETTINGS_JSON)
+        write_json(Paths.SETTINGS_JSON, self._settings.as_dict())
 
     def on_about_action(self, action: Gio.SimpleAction, param):
         about = AboutDialog(self.props.active_window)

@@ -1,6 +1,10 @@
+from datetime import datetime
 from typing import Callable, Union
 
 from gi.repository import GObject, Gio, Gtk
+
+from coronainfo.enums import App, Date
+from coronainfo.settings import Settings
 
 
 def run_in_thread(func: Callable, on_finish: Callable = None,
@@ -47,6 +51,17 @@ def create_action(self: Union[Gtk.Application, Gtk.ApplicationWindow], name: str
             origin = "win"
 
         app.set_accels_for_action(f"{origin}.{name}", shortcuts)
+
+
+def evaluate_title(settings: Settings) -> str:
+    last_fetched = settings.last_fetched
+
+    display = f"{App.NAME} {App.VERSION}"
+    if last_fetched:
+        display_date = datetime.fromisoformat(last_fetched).strftime(Date.DISPLAY_FORMAT)
+        display = f"Last fetched: {display_date}"
+
+    return display
 
 
 def reset_gschema(settings: Gio.Settings):

@@ -19,15 +19,13 @@ from gi.repository import GObject, Gio, Gtk
 
 from coronainfo import app
 from coronainfo.controllers import AppController
-from coronainfo.enums import App
-from coronainfo.utils.ui_helpers import create_action
+from coronainfo.utils.ui_helpers import create_action, evaluate_title
 from coronainfo.views.dialog_preferences import PreferencesDialog
 
 
 @Gtk.Template(resource_path="/coronainfo/ui/main-window")
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = "MainWindow"
-    TITLE = f"{App.NAME} {App.VERSION}"
 
     refresh_btn: Gtk.Button = Gtk.Template.Child(name="refresh_btn")
     spinner: Gtk.Spinner = Gtk.Template.Child(name="spinner")
@@ -40,7 +38,9 @@ class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._init_settings()
-        self.set_title(self.TITLE)
+
+        title = evaluate_title(app.get_settings())
+        self.set_title(title)
 
         # Set the shortcuts window aka help overlay
         builder: Gtk.Builder = Gtk.Builder.new_from_resource("/coronainfo/ui/help-overlay")
@@ -84,7 +84,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.table.set_visible(True)
         self.searchbar.set_visible(True)
         self.refresh_btn.set_sensitive(True)
-        self.set_title(self.TITLE)
 
     def on_progress_emitted(self, controller, message: str):
         self.set_title(message)
