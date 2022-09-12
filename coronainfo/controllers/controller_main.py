@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup, Tag
 from gi.repository import GLib, GObject, Gio, Gtk
 
+from coronainfo import app
 from coronainfo.enums import Paths
 from coronainfo.models import CoronaData, CoronaHeaders
 from coronainfo.utils.cache import cache_json, get_cache_json
@@ -54,6 +55,7 @@ class MainController(GObject.Object):
             column.set_alignment(0.5)
             column.set_sort_column_id(i)
             column.set_expand(True)
+            self._bind_column_settings(column)
 
             self.table.append_column(column)
 
@@ -189,3 +191,19 @@ class MainController(GObject.Object):
             GObject.TYPE_BOOLEAN,
             [str]
         )
+
+    def _bind_column_settings(self, column: Gtk.TreeViewColumn):
+        title = column.get_title()
+        name = title.replace(" ", "-").replace("/", "per").lower()
+
+        settings = app.get_schema()
+        for key in settings.keys():
+            # Convert column-bla-bla-visible to just bla-bla
+            key_column_name = "-".join(key.split("-")[1:-1])
+            if name == key_column_name:
+                settings.bind(
+                    key,
+                    column,
+                    "visible",
+                    Gio.SettingsBindFlags.DEFAULT
+                )

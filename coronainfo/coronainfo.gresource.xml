@@ -2,6 +2,7 @@
 <gresources>
   <gresource prefix="coronainfo/ui">
     <file alias="main-window">resources/ui/window_main.ui</file>
+    <file alias="preferences-dialog">resources/ui/dialog_preferences.ui</file>
     <file alias="help-overlay">resources/ui/help-overlay.ui</file>
   </gresource>
 </gresources>
