@@ -1,12 +1,14 @@
+from datetime import datetime
+
 from bs4 import BeautifulSoup, Tag
 from gi.repository import GLib, GObject, Gio, Gtk
 
 from coronainfo import app
-from coronainfo.enums import Paths
+from coronainfo.enums import App, Date, Paths
 from coronainfo.models import CoronaData, CoronaHeaders
-from coronainfo.utils.cache import cache_json, get_cache_json
+from coronainfo.utils.files import get_json, write_json
 from coronainfo.utils.functions import convert_to_num
-from coronainfo.utils.ui_helpers import run_in_thread
+from coronainfo.utils.ui_helpers import run_in_thread, evaluate_title
 
 
 class MainController(GObject.Object):
@@ -30,6 +32,14 @@ class MainController(GObject.Object):
     def start_populate(self):
         run_in_thread(self._populate_data, self.on_populate_finished)
 
+    def on_populate_finished(self):
+        self.is_populating = False
+        self.emit(self.POPULATE_FINISHED)
+
+        # Update title
+        display = evaluate_title(app.get_settings())
+        self.update_progress(display)
+
     def on_refresh(self):
         if not self.is_populating:
             self.model.clear()
@@ -37,9 +47,61 @@ class MainController(GObject.Object):
         else:
             print("[WARNING]: Refresh in progress")
 
-    def on_populate_finished(self):
-        self.is_populating = False
-        self.emit(self.POPULATE_FINISHED)
+    def on_save(self, window: Gtk.ApplicationWindow):
+        self._dialog = Gtk.FileChooserNative(
+            title="Save File as",
+            transient_for=window,
+            action=Gtk.FileChooserAction.SAVE,
+            accept_label="_Save",
+            cancel_label="_Cancel"
+        )
+
+        name = App.NAME.replace(' ', '')
+        date = datetime.fromisoformat(app.get_settings().last_fetched).date()
+        file_name = f"{name}_{date}.json"
+        downloads_dir = Gio.File.new_for_path(str(Paths.DOWNLOADS_DIR))
+        self._dialog.set_current_name(file_name)
+        self._dialog.set_current_folder(downloads_dir)
+        self._dialog.connect("response", self.on_save_response)
+        self._dialog.show()
+
+    def on_save_response(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType):
+        if response == Gtk.ResponseType.ACCEPT:
+            dest_file: Gio.File = dialog.get_file()
+            try:
+                src_file: Gio.File = Gio.File.new_for_path(str(Paths.CACHE_JSON))
+                src_file.load_contents_async(None, self.on_read_cache_complete, dest_file)
+
+            except GLib.Error as err:
+                print("An error has occurred while trying to read from cache while saving:", err)
+
+        self._dialog.destroy()
+
+    def on_read_cache_complete(self, file: Gio.File, result: Gio.AsyncResult, dest_file: Gio.File):
+        try:
+            contents = file.load_contents_finish(result)[1]
+            contents_bytes = GLib.Bytes.new(contents)
+            dest_file.replace_contents_bytes_async(
+                contents_bytes,
+                None,
+                False,
+                Gio.FileCreateFlags.NONE,
+                None,
+                self.on_write_file_complete
+            )
+
+        except GLib.Error as err:
+            print("An error has occurred while trying to write data:", err)
+
+    def on_write_file_complete(self, file: Gio.File, result: Gio.AsyncResult):
+        result = file.replace_contents_finish(result)
+        path = file.get_path()
+
+        if not result:
+            print(f"Unable to save data to {path}")
+            return
+
+        print(f"Successfully saved data to {path}")
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -110,15 +172,20 @@ class MainController(GObject.Object):
         self.set_filter(self.country_filter)
 
     def _get_data(self, use_cache: bool = True):
-        cache_file = Paths.CACHE
+        cache_file = Paths.CACHE_JSON
 
         if not cache_file.exists() or not use_cache:
             self.update_progress("Fetching data...")
             dataset = self._fetch_data()
-            cache_json(cache_file.name, [row.as_dict() for row in dataset])
+            write_json(cache_file, [row.as_dict() for row in dataset])
+
+            # Update last_fetched settings
+            today = datetime.now().strftime(Date.RAW_FORMAT)
+            settings = app.get_settings()
+            settings.last_fetched = today
 
         self.update_progress("Reading data...")
-        json_data = get_cache_json(cache_file.name)
+        json_data = get_json(cache_file)
         result = map(lambda row: CoronaData(**row), json_data)
         return result
 
