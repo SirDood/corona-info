@@ -4,7 +4,7 @@ from typing import Callable, Union
 from gi.repository import GObject, Gio, Gtk
 
 from coronainfo.enums import App, Date
-from coronainfo.settings import Settings
+from coronainfo.settings import AppSettings
 
 
 def run_in_thread(func: Callable, on_finish: Callable = None,
@@ -53,7 +53,7 @@ def create_action(self: Union[Gtk.Application, Gtk.ApplicationWindow], name: str
         app.set_accels_for_action(f"{origin}.{name}", shortcuts)
 
 
-def evaluate_title(settings: Settings) -> str:
+def evaluate_title(settings: AppSettings) -> str:
     last_fetched = settings.last_fetched
 
     display = f"{App.NAME} {App.VERSION}"

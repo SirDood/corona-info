@@ -23,15 +23,15 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio
 
 from coronainfo.enums import App, Paths
-from coronainfo.settings import Settings
+from coronainfo.settings import AppSettings
 from coronainfo.views import MainWindow, AboutDialog
 from coronainfo.utils.ui_helpers import create_action
-from coronainfo.utils.files import get_json, write_json
+from coronainfo.utils.files import get_json
 
 
 class CoronaInfoApp(Gtk.Application):
     _schema = Gio.Settings(schema_id=App.ID)
-    _settings = Settings(**get_json(Paths.SETTINGS_JSON)) if Paths.SETTINGS_JSON.exists() else Settings.placeholder()
+    _settings = AppSettings(**get_json(Paths.SETTINGS_JSON)) if Paths.SETTINGS_JSON.exists() else AppSettings.placeholder()
 
     def __init__(self):
         super().__init__(application_id=App.ID,
@@ -60,7 +60,7 @@ class CoronaInfoApp(Gtk.Application):
 
     def on_shutdown(self, app):
         print("Saving app settings to:", Paths.SETTINGS_JSON)
-        write_json(Paths.SETTINGS_JSON, self._settings.as_dict())
+        self._settings.commit()
 
     def on_about_action(self, action: Gio.SimpleAction, param):
         about = AboutDialog(self.props.active_window)
@@ -74,7 +74,7 @@ def get_schema() -> Gio.Settings:
     return CoronaInfoApp.get_schema()
 
 
-def get_settings() -> Settings:
+def get_settings() -> AppSettings:
     return CoronaInfoApp.get_settings()
 
 
