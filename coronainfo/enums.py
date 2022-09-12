@@ -16,8 +16,11 @@ class Paths:
 
     _xdg_cache = os.environ.get("XDG_CACHE_HOME")
     CACHE_DIR = Path(_xdg_cache) if _xdg_cache else Path.home() / ".cache" / App.ID
-    if not CACHE_DIR.exists():
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    CACHE = CACHE_DIR / "data.json"
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    CACHE_JSON = CACHE_DIR / "cache.json"
+
+    _xdg_data = os.environ.get("XDG_DATA_HOME")
+    DATA_DIR = Path(_xdg_data) if _xdg_data else CACHE_DIR
+    SETTINGS_JSON = DATA_DIR / "settings.json"
 
     DOWNLOADS_DIR = Path.home() / "Downloads"

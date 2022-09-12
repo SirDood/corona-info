@@ -22,13 +22,16 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio
 
-from coronainfo.enums import App
+from coronainfo.enums import App, Paths
+from coronainfo.settings import Settings
 from coronainfo.views import MainWindow, AboutDialog
 from coronainfo.utils.ui_helpers import create_action
+from coronainfo.utils.files import get_json
 
 
 class CoronaInfoApp(Gtk.Application):
-    _settings = Gio.Settings(schema_id=App.ID)
+    _schema = Gio.Settings(schema_id=App.ID)
+    _settings = Settings(**get_json(Paths.SETTINGS_JSON)) if Paths.SETTINGS_JSON.exists() else Settings.placeholder()
 
     def __init__(self):
         super().__init__(application_id=App.ID,
@@ -39,6 +42,10 @@ class CoronaInfoApp(Gtk.Application):
 
     @classmethod
     def get_schema(cls) -> Gio.Settings:
+        return cls._schema
+
+    @classmethod
+    def get_settings(cls) -> Gio.Settings:
         return cls._settings
 
     def do_activate(self):
@@ -58,6 +65,10 @@ class CoronaInfoApp(Gtk.Application):
 
 def get_schema() -> Gio.Settings:
     return CoronaInfoApp.get_schema()
+
+
+def get_settings() -> Settings:
+    return CoronaInfoApp.get_settings()
 
 
 def main(version):

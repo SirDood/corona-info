@@ -4,7 +4,7 @@ from gi.repository import GLib, GObject, Gio, Gtk
 from coronainfo import app
 from coronainfo.enums import App, Paths
 from coronainfo.models import CoronaData, CoronaHeaders
-from coronainfo.utils.cache import cache_json, get_cache_json
+from coronainfo.utils.files import write_json, get_json
 from coronainfo.utils.functions import convert_to_num
 from coronainfo.utils.ui_helpers import run_in_thread
 
@@ -61,7 +61,7 @@ class MainController(GObject.Object):
         if response == Gtk.ResponseType.ACCEPT:
             dest_file: Gio.File = dialog.get_file()
             try:
-                src_file: Gio.File = Gio.File.new_for_path(str(Paths.CACHE))
+                src_file: Gio.File = Gio.File.new_for_path(str(Paths.CACHE_JSON))
                 src_file.load_contents_async(None, self.on_read_cache_complete, dest_file)
 
             except GLib.Error as err:
@@ -164,15 +164,15 @@ class MainController(GObject.Object):
         self.set_filter(self.country_filter)
 
     def _get_data(self, use_cache: bool = True):
-        cache_file = Paths.CACHE
+        cache_file = Paths.CACHE_JSON
 
         if not cache_file.exists() or not use_cache:
             self.update_progress("Fetching data...")
             dataset = self._fetch_data()
-            cache_json(cache_file.name, [row.as_dict() for row in dataset])
+            write_json(cache_file, [row.as_dict() for row in dataset])
 
         self.update_progress("Reading data...")
-        json_data = get_cache_json(cache_file.name)
+        json_data = get_json(cache_file)
         result = map(lambda row: CoronaData(**row), json_data)
         return result
 
