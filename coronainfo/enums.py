@@ -24,7 +24,8 @@ class Paths:
     SETTINGS_JSON = DATA_DIR / "settings.json"
 
     _xdg_state = os.environ.get("XDG_STATE_HOME")
-    STATE_DIR = Path(_xdg_state) if _xdg_state else CACHE_DIR
+    STATE_DIR = Path(_xdg_state) / "logs" if _xdg_state else CACHE_DIR / "logs"
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
 
     DOWNLOADS_DIR = Path.home() / "Downloads"
 

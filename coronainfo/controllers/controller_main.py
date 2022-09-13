@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from bs4 import BeautifulSoup, Tag
@@ -45,7 +46,7 @@ class MainController(GObject.Object):
             self.model.clear()
             run_in_thread(self._populate_data, self.on_populate_finished, func_args=(False,))
         else:
-            print("[WARNING]: Refresh in progress")
+            logging.warning("Refresh in progress!")
 
     def on_save(self, window: Gtk.ApplicationWindow):
         self._dialog = Gtk.FileChooserNative(
@@ -73,7 +74,7 @@ class MainController(GObject.Object):
                 src_file.load_contents_async(None, self.on_read_cache_complete, dest_file)
 
             except GLib.Error as err:
-                print("An error has occurred while trying to read from cache while saving:", err)
+                logging.error("An error has occurred while trying to read from cache while saving:", exc_info=True)
 
         self._dialog.destroy()
 
@@ -91,17 +92,17 @@ class MainController(GObject.Object):
             )
 
         except GLib.Error as err:
-            print("An error has occurred while trying to write data:", err)
+            logging.error("An error has occurred while trying to write data:", exc_info=True)
 
     def on_write_file_complete(self, file: Gio.File, result: Gio.AsyncResult):
         result = file.replace_contents_finish(result)
         path = file.get_path()
 
         if not result:
-            print(f"Unable to save data to {path}")
+            logging.warning(f"Unable to save data to {path}")
             return
 
-        print(f"Successfully saved data to {path}")
+        logging.info(f"Successfully saved data to {path}")
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -204,7 +205,7 @@ class MainController(GObject.Object):
             return result
 
         except GLib.Error as err:
-            print("An error has occurred while fetching data:", err)
+            logging.error("An error has occurred while fetching data:", exc_info=True)
 
     def _parse_table_html(self, table: Tag) -> map:
         countries: list[Tag] = table.find_all("tr")[7:]
