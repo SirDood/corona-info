@@ -28,6 +28,7 @@ configure_file(
 
 coronainfo_sources = [
   '__init__.py',
+  '_logger.py',
   'app.py',
   'enums.py',
   'settings.py'
