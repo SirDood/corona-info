@@ -54,6 +54,7 @@ class CoronaInfoApp(Gtk.Application):
         return cls._settings
 
     def on_activate(self, app):
+        logging.info("Launching application")
         logging.info("Preparing window")
         win = self.props.active_window
         if not win:
@@ -63,7 +64,7 @@ class CoronaInfoApp(Gtk.Application):
         logging.info("Window launched")
 
     def on_shutdown(self, app):
-        logging.info("Shutting down")
+        logging.info("Shutting down application")
         self._settings.commit()
 
     def on_about_action(self, action: Gio.SimpleAction, param):
@@ -86,5 +87,4 @@ def get_settings() -> AppSettings:
 
 def main(version):
     app = CoronaInfoApp()
-    logging.info("Launching application")
     return app.run(sys.argv)
