@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import Callable, Union
 
@@ -62,6 +63,10 @@ def evaluate_title(settings: AppSettings) -> str:
         display = f"Last fetched: {display_date}"
 
     return display
+
+
+def log_action_call(action: Gio.SimpleAction):
+    logging.debug(f"Action `{action.get_name()}` called")
 
 
 def reset_gschema(settings: Gio.Settings):

@@ -36,6 +36,9 @@ def install_icons(source: Path, destination: Path):
 def main():
     from gi.repository import Gio
 
+    # Set environment variable(s)
+    os.environ["CORONAINFO_DEBUG"] = "1"
+
     # Compile resources
     print("Compiling resources... ", end="")
     command = [
