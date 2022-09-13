@@ -1,3 +1,5 @@
+# WORK IN PROGRESS. THIS README IS VERY OUTDATED
+
 # Covid Scrapper
 
 A simple web scraping project that scrapes [Worldometer](https://www.worldometers.info/coronavirus/ "Worldometer") for
