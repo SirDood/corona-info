@@ -64,7 +64,6 @@ class CoronaInfoApp(Gtk.Application):
 
     def on_shutdown(self, app):
         logging.info("Shutting down")
-        logging.debug(f"Saving app settings to: {Paths.SETTINGS_JSON}")
         self._settings.commit()
 
     def on_about_action(self, action: Gio.SimpleAction, param):

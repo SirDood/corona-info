@@ -23,7 +23,8 @@ class MainController(GObject.Object):
 
         self.table: Gtk.TreeView = None
 
-        field_types = (field.type for field in CoronaData.get_fields())
+        field_types = tuple(field.type for field in CoronaData.get_fields())
+        logging.debug(f"Model field types: {field_types}")
         self.model = Gtk.ListStore(*field_types)
         self.country_filter = ""
         self.set_filter(self.country_filter)
@@ -36,6 +37,7 @@ class MainController(GObject.Object):
     def on_populate_finished(self):
         self.is_populating = False
         self.emit(self.POPULATE_FINISHED)
+        logging.info("Data population finished")
 
         # Update title
         display = evaluate_title(app.get_settings())
@@ -66,11 +68,14 @@ class MainController(GObject.Object):
         self._dialog.connect("response", self.on_save_response)
         self._dialog.show()
 
-    def on_save_response(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType):
+    def on_save_response(self, dialog: Gtk.FileChooserNative, response: int):
+        logging.debug(f"Response type: {Gtk.ResponseType(response).value_name}")
         if response == Gtk.ResponseType.ACCEPT:
             dest_file: Gio.File = dialog.get_file()
+            logging.info(f"Saving data to {dest_file.get_path()}")
             try:
                 src_file: Gio.File = Gio.File.new_for_path(str(Paths.CACHE_JSON))
+                logging.debug(f"Attempting to read file: {src_file.get_path()}")
                 src_file.load_contents_async(None, self.on_read_cache_complete, dest_file)
 
             except GLib.Error as err:
@@ -82,6 +87,7 @@ class MainController(GObject.Object):
         try:
             contents = file.load_contents_finish(result)[1]
             contents_bytes = GLib.Bytes.new(contents)
+            logging.debug(f"Attempting to write to file: {dest_file.get_path()}")
             dest_file.replace_contents_bytes_async(
                 contents_bytes,
                 None,
@@ -166,6 +172,7 @@ class MainController(GObject.Object):
     def _populate_data(self, use_cache: bool = True):
         self.emit(self.POPULATE_STARTED)
         self.is_populating = True
+        logging.info("Data population started")
 
         self.table.set_model(None)
         for row in self._get_data(use_cache=use_cache):
@@ -176,16 +183,22 @@ class MainController(GObject.Object):
         cache_file = Paths.CACHE_JSON
 
         if not cache_file.exists() or not use_cache:
-            self.update_progress("Fetching data...")
+            message = "Fetching data..."
+            self.update_progress(message)
+            logging.info(message)
             dataset = self._fetch_data()
+            logging.debug(f"Caching data at {cache_file}")
             write_json(cache_file, [row.as_dict() for row in dataset])
 
             # Update last_fetched settings
             today = datetime.now().strftime(Date.RAW_FORMAT)
+            logging.debug(f"Updating last_fetched: {today}")
             settings = app.get_settings()
             settings.last_fetched = today
 
-        self.update_progress("Reading data...")
+        message = "Reading data..."
+        self.update_progress(message)
+        logging.info(message)
         json_data = get_json(cache_file)
         result = map(lambda row: CoronaData(**row), json_data)
         return result
@@ -196,11 +209,14 @@ class MainController(GObject.Object):
             success, content, etag = fetch_url.load_contents(None)
 
             # Parse html content and find the table for today
+            logging.info("Parsing fetched data...")
             soup = BeautifulSoup(content, "html.parser")
             table = soup.find(id="main_table_countries_today")
             table_body = table.find("tbody")
 
-            self.update_progress("Parsing HTML...")
+            message = "Parsing table HTML..."
+            self.update_progress(message)
+            logging.info(message)
             result = self._parse_table_html(table_body)
             return result
 

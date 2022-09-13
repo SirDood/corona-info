@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 
 from coronainfo.enums import Paths
@@ -16,4 +17,6 @@ class AppSettings(BaseData):
         )
 
     def commit(self):
-        write_json(Paths.SETTINGS_JSON, self.as_dict())
+        path = Paths.SETTINGS_JSON
+        logging.debug(f"Saving app settings to: {path}")
+        write_json(path, self.as_dict())
