@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+import os
+
 from gi.repository import Adw, GObject, Gio, Gtk
 
 from coronainfo import app
@@ -52,6 +55,10 @@ class MainWindow(Adw.ApplicationWindow):
         create_action(self, "save-data", self.on_save_action, ["<Ctrl>s"])
         create_action(self, "preferences", self.on_preferences_action, ["<Ctrl>comma"])
         create_action(self, "toggle-search", self.on_toggle_search_action)
+
+        if os.environ.get("CORONAINFO_DEBUG"):
+            create_action(self, "debug", self._on_debug_action, ["<Ctrl>d"])
+            logging.debug("Debug action created.")
 
         title = evaluate_title(app.get_settings())
         self.set_title(title)
@@ -113,6 +120,9 @@ class MainWindow(Adw.ApplicationWindow):
         search = self.search_entry.get_text()
         self.statuspage.set_title(f"`{search}` Not Found")
         self.statuspage.set_visible(True)
+
+    def _on_debug_action(self, action: Gio.SimpleAction, param):
+        logging.debug(f"Debug action activated")
 
     def _init_settings(self):
         settings = app.get_schema()
