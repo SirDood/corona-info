@@ -19,7 +19,7 @@ from gi.repository import GObject, Gio, Gtk
 
 from coronainfo import app
 from coronainfo.controllers import AppController
-from coronainfo.utils.ui_helpers import create_action, evaluate_title
+from coronainfo.utils.ui_helpers import create_action, evaluate_title, log_action_call
 from coronainfo.views.dialog_preferences import PreferencesDialog
 
 
@@ -89,16 +89,20 @@ class MainWindow(Gtk.ApplicationWindow):
         self.set_title(message)
 
     def on_refresh_action(self, action: Gio.SimpleAction, param):
+        log_action_call(action)
         self.controller.on_refresh()
 
     def on_save_action(self, action: Gio.SimpleAction, param):
+        log_action_call(action)
         self.controller.on_save(self)
 
     def on_toggle_search_action(self, action: Gio.SimpleAction, param):
+        log_action_call(action)
         search_mode = self.searchbar.get_search_mode()
         self.searchbar.set_search_mode(not search_mode)
 
     def on_preferences_action(self, action: Gio.SimpleAction, param):
+        log_action_call(action)
         settings = PreferencesDialog(self)
         settings.set_columns(self.table.get_columns())
         settings.show()

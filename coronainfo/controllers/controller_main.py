@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from bs4 import BeautifulSoup, Tag
@@ -22,7 +23,8 @@ class MainController(GObject.Object):
 
         self.table: Gtk.TreeView = None
 
-        field_types = (field.type for field in CoronaData.get_fields())
+        field_types = tuple(field.type for field in CoronaData.get_fields())
+        logging.debug(f"Model field types: {field_types}")
         self.model = Gtk.ListStore(*field_types)
         self.country_filter = ""
         self.set_filter(self.country_filter)
@@ -35,6 +37,7 @@ class MainController(GObject.Object):
     def on_populate_finished(self):
         self.is_populating = False
         self.emit(self.POPULATE_FINISHED)
+        logging.info("Data population finished")
 
         # Update title
         display = evaluate_title(app.get_settings())
@@ -45,7 +48,7 @@ class MainController(GObject.Object):
             self.model.clear()
             run_in_thread(self._populate_data, self.on_populate_finished, func_args=(False,))
         else:
-            print("[WARNING]: Refresh in progress")
+            logging.warning("Refresh in progress!")
 
     def on_save(self, window: Gtk.ApplicationWindow):
         self._dialog = Gtk.FileChooserNative(
@@ -65,15 +68,18 @@ class MainController(GObject.Object):
         self._dialog.connect("response", self.on_save_response)
         self._dialog.show()
 
-    def on_save_response(self, dialog: Gtk.FileChooserNative, response: Gtk.ResponseType):
+    def on_save_response(self, dialog: Gtk.FileChooserNative, response: int):
+        logging.debug(f"Response type: {Gtk.ResponseType(response).value_name}")
         if response == Gtk.ResponseType.ACCEPT:
             dest_file: Gio.File = dialog.get_file()
+            logging.info(f"Saving data to {dest_file.get_path()}")
             try:
                 src_file: Gio.File = Gio.File.new_for_path(str(Paths.CACHE_JSON))
+                logging.debug(f"Attempting to read file: {src_file.get_path()}")
                 src_file.load_contents_async(None, self.on_read_cache_complete, dest_file)
 
             except GLib.Error as err:
-                print("An error has occurred while trying to read from cache while saving:", err)
+                logging.error("An error has occurred while trying to read from cache while saving:", exc_info=True)
 
         self._dialog.destroy()
 
@@ -81,6 +87,7 @@ class MainController(GObject.Object):
         try:
             contents = file.load_contents_finish(result)[1]
             contents_bytes = GLib.Bytes.new(contents)
+            logging.debug(f"Attempting to write to file: {dest_file.get_path()}")
             dest_file.replace_contents_bytes_async(
                 contents_bytes,
                 None,
@@ -91,17 +98,17 @@ class MainController(GObject.Object):
             )
 
         except GLib.Error as err:
-            print("An error has occurred while trying to write data:", err)
+            logging.error("An error has occurred while trying to write data:", exc_info=True)
 
     def on_write_file_complete(self, file: Gio.File, result: Gio.AsyncResult):
         result = file.replace_contents_finish(result)
         path = file.get_path()
 
         if not result:
-            print(f"Unable to save data to {path}")
+            logging.warning(f"Unable to save data to {path}")
             return
 
-        print(f"Successfully saved data to {path}")
+        logging.info(f"Successfully saved data to {path}")
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -125,23 +132,41 @@ class MainController(GObject.Object):
                        renderer: Gtk.CellRendererText,
                        model: Gtk.TreeModelSort,
                        tree_iter: Gtk.TreeIter,
-                       data):
+                       data):  # column number
 
         value = model.get(tree_iter, data)[0]
         if isinstance(value, int):
             display = f"{value:,}"
+
             if "NEW" in CoronaHeaders.as_tuple()[data]:
-                display = "+" + display
+                prefix = ""
+                if value >= 0:
+                    prefix = "+"
+                display = prefix + display
+
             renderer.set_property("text", display)
 
+        orange = "rgb(255, 145, 0)"
+        red = "rgb(220, 0, 0)"
+        green = "rgb(0, 160, 0)"
+        blue = "rgb(82, 119, 145)"
         if data == int(CoronaHeaders.NEW_CASES):
-            renderer.set_property("foreground", "rgb(255, 145, 0)")
+            colour = orange
+            if value < 0:
+                colour = blue
+            renderer.set_property("foreground", colour)
 
         if data == int(CoronaHeaders.NEW_DEATHS):
-            renderer.set_property("foreground", "rgb(220, 0, 0)")
+            colour = red
+            if value < 0:
+                colour = blue
+            renderer.set_property("foreground", colour)
 
         if data == int(CoronaHeaders.NEW_RECOVERED):
-            renderer.set_property("foreground", "rgb(0, 160, 0)")
+            colour = green
+            if value < 0:
+                colour = red
+            renderer.set_property("foreground", colour)
 
     def set_filter(self, text: str):
         if self.table:
@@ -165,6 +190,7 @@ class MainController(GObject.Object):
     def _populate_data(self, use_cache: bool = True):
         self.emit(self.POPULATE_STARTED)
         self.is_populating = True
+        logging.info("Data population started")
 
         self.table.set_model(None)
         for row in self._get_data(use_cache=use_cache):
@@ -175,16 +201,22 @@ class MainController(GObject.Object):
         cache_file = Paths.CACHE_JSON
 
         if not cache_file.exists() or not use_cache:
-            self.update_progress("Fetching data...")
+            message = "Fetching data..."
+            self.update_progress(message)
+            logging.info(message)
             dataset = self._fetch_data()
+            logging.debug(f"Caching data at {cache_file}")
             write_json(cache_file, [row.as_dict() for row in dataset])
 
             # Update last_fetched settings
             today = datetime.now().strftime(Date.RAW_FORMAT)
+            logging.debug(f"Updating last_fetched: {today}")
             settings = app.get_settings()
             settings.last_fetched = today
 
-        self.update_progress("Reading data...")
+        message = "Reading data..."
+        self.update_progress(message)
+        logging.info(message)
         json_data = get_json(cache_file)
         result = map(lambda row: CoronaData(**row), json_data)
         return result
@@ -195,16 +227,19 @@ class MainController(GObject.Object):
             success, content, etag = fetch_url.load_contents(None)
 
             # Parse html content and find the table for today
+            logging.info("Parsing fetched data...")
             soup = BeautifulSoup(content, "html.parser")
             table = soup.find(id="main_table_countries_today")
             table_body = table.find("tbody")
 
-            self.update_progress("Parsing HTML...")
+            message = "Parsing table HTML..."
+            self.update_progress(message)
+            logging.info(message)
             result = self._parse_table_html(table_body)
             return result
 
         except GLib.Error as err:
-            print("An error has occurred while fetching data:", err)
+            logging.error("An error has occurred while fetching data:", exc_info=True)
 
     def _parse_table_html(self, table: Tag) -> map:
         countries: list[Tag] = table.find_all("tr")[7:]
@@ -220,9 +255,6 @@ class MainController(GObject.Object):
         def sanitise_value(value: str):
             sanitised_value = value.replace(",", "").strip()
 
-            # For New Whatever values which have a + at the start
-            if len(sanitised_value) > 0 and sanitised_value[0] == "+":
-                sanitised_value = sanitised_value[1:]
             if sanitised_value == "N/A":
                 sanitised_value = None
 

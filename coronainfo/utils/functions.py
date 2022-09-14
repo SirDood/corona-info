@@ -40,12 +40,19 @@ def convert_to_num(text: str) -> typing.Union[int, float, str]:
     """
     result = text
 
-    if not result:  # If empty string
+    if not result:
         result = 0
-    elif result.isdigit():
-        result = int(result)
-    elif is_float(result):
-        result = float(result)
+
+    # For values that have a + or - at the start
+    elif len(result) > 0:
+        temp = result[0:]
+        if len(temp) > 0 and (temp[0] == "+" or temp[0] == "-"):
+            temp = temp[1:]
+
+        if temp.isdigit():
+            result = int(result)
+        elif is_float(temp):
+            result = float(result)
 
     return result
 

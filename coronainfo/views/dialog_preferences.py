@@ -1,3 +1,5 @@
+import logging
+
 from gi.repository import Adw, GObject, Gtk
 
 
@@ -11,22 +13,24 @@ class PreferencesDialog(Adw.PreferencesWindow):
         super().__init__()
         self.set_transient_for(parent)
 
-        self.rows: list[Adw.ActionRow] = []
-
     def set_columns(self, columns: list[Gtk.TreeViewColumn]):
         for column in columns:
             row = Adw.ActionRow()
             toggle = Gtk.CheckButton()
+
             column.bind_property(
                 "visible",
                 toggle,
                 "active",
                 GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE
             )
+            column.connect("notify::visible", self.on_column_visibility_changed)
 
             row.set_title(column.get_title())
             row.add_suffix(toggle)
             row.set_activatable_widget(toggle)
 
             self.columns_group.add(row)
-            self.rows.append(row)
+
+    def on_column_visibility_changed(self, column: Gtk.TreeViewColumn, _):
+        logging.debug(f"Visibility of column `{column.get_title()}` set to `{column.get_visible()}`")
