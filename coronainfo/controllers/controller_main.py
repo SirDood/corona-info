@@ -16,6 +16,8 @@ class MainController(GObject.Object):
     POPULATE_STARTED = "velvet-massager"
     POPULATE_FINISHED = "cube-helpless"
     PROGRESS_MESSAGE = "absurd-frosted"
+    MODEL_EMPTY = "vintage-next"
+    TOAST_MESSAGE = "untwist-unicycle"
 
     def __init__(self):
         super().__init__()
@@ -48,7 +50,9 @@ class MainController(GObject.Object):
             self.model.clear()
             run_in_thread(self._populate_data, self.on_populate_finished, func_args=(False,))
         else:
-            logging.warning("Refresh in progress!")
+            message = "Refresh in progress!"
+            logging.warning(message)
+            self.emit(self.TOAST_MESSAGE, message, 2)
 
     def on_save(self, window: Gtk.ApplicationWindow):
         self._dialog = Gtk.FileChooserNative(
@@ -80,6 +84,10 @@ class MainController(GObject.Object):
 
             except GLib.Error as err:
                 logging.error("An error has occurred while trying to read from cache while saving:", exc_info=True)
+                self.emit(
+                    self.TOAST_MESSAGE,
+                    f"An error has occurred while attempting to save data. Refer the logs at {Paths.LOGS_DIR}",
+                    0)
 
         self._dialog.destroy()
 
@@ -99,6 +107,10 @@ class MainController(GObject.Object):
 
         except GLib.Error as err:
             logging.error("An error has occurred while trying to write data:", exc_info=True)
+            self.emit(
+                self.TOAST_MESSAGE,
+                f"An error has occurred while attempting to save data. Refer the logs at {Paths.LOGS_DIR}",
+                0)
 
     def on_write_file_complete(self, file: Gio.File, result: Gio.AsyncResult):
         result = file.replace_contents_finish(result)
@@ -108,7 +120,9 @@ class MainController(GObject.Object):
             logging.warning(f"Unable to save data to {path}")
             return
 
-        logging.info(f"Successfully saved data to {path}")
+        message = f"Successfully saved data to {path}"
+        logging.info(message)
+        self.emit(self.TOAST_MESSAGE, message, 2)
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -176,6 +190,9 @@ class MainController(GObject.Object):
             model_proxy: Gtk.TreeModelSort = Gtk.TreeModelSort.new_with_model(model_filter)
             self.table.set_model(model_proxy)
 
+            if len(model_proxy) == 0:
+                self.emit(self.MODEL_EMPTY)
+
     def visible_func(self, model: Gtk.ListStore, tree_iter: Gtk.TreeIter, data):
         if not self.country_filter:
             return True
@@ -240,6 +257,10 @@ class MainController(GObject.Object):
 
         except GLib.Error as err:
             logging.error("An error has occurred while fetching data:", exc_info=True)
+            self.emit(
+                self.TOAST_MESSAGE,
+                f"An error has occurred while fetching data. Refer the logs at {Paths.LOGS_DIR}",
+                0)
 
     def _parse_table_html(self, table: Tag) -> map:
         countries: list[Tag] = table.find_all("tr")[7:]
@@ -289,6 +310,22 @@ class MainController(GObject.Object):
             GObject.SignalFlags.RUN_LAST,
             GObject.TYPE_BOOLEAN,
             [str]
+        )
+
+        GObject.signal_new(
+            self.MODEL_EMPTY,
+            self,
+            GObject.SignalFlags.RUN_LAST,
+            GObject.TYPE_BOOLEAN,
+            []
+        )
+
+        GObject.signal_new(
+            self.TOAST_MESSAGE,
+            self,
+            GObject.SignalFlags.RUN_LAST,
+            GObject.TYPE_BOOLEAN,
+            [str, int]
         )
 
     def _bind_column_settings(self, column: Gtk.TreeViewColumn):

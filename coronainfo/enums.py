@@ -5,7 +5,7 @@ from pathlib import Path
 class App:
     ID = "com.izzthedude.CoronaInfo"
     NAME = "Corona Info"
-    VERSION = "0.2.2"
+    VERSION = "0.3.0"
     WEBSITE = "https://github.com/izzthedude/corona-info"
 
 
