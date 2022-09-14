@@ -13,8 +13,6 @@ class PreferencesDialog(Adw.PreferencesWindow):
         super().__init__()
         self.set_transient_for(parent)
 
-        self.rows: list[Adw.ActionRow] = []
-
     def set_columns(self, columns: list[Gtk.TreeViewColumn]):
         for column in columns:
             row = Adw.ActionRow()
@@ -33,7 +31,6 @@ class PreferencesDialog(Adw.PreferencesWindow):
             row.set_activatable_widget(toggle)
 
             self.columns_group.add(row)
-            self.rows.append(row)
 
     def on_column_visibility_changed(self, column: Gtk.TreeViewColumn, _):
         logging.debug(f"Visibility of column `{column.get_title()}` set to `{column.get_visible()}`")

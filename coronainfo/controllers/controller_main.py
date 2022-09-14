@@ -132,23 +132,41 @@ class MainController(GObject.Object):
                        renderer: Gtk.CellRendererText,
                        model: Gtk.TreeModelSort,
                        tree_iter: Gtk.TreeIter,
-                       data):
+                       data):  # column number
 
         value = model.get(tree_iter, data)[0]
         if isinstance(value, int):
             display = f"{value:,}"
+
             if "NEW" in CoronaHeaders.as_tuple()[data]:
-                display = "+" + display
+                prefix = ""
+                if value >= 0:
+                    prefix = "+"
+                display = prefix + display
+
             renderer.set_property("text", display)
 
+        orange = "rgb(255, 145, 0)"
+        red = "rgb(220, 0, 0)"
+        green = "rgb(0, 160, 0)"
+        blue = "rgb(82, 119, 145)"
         if data == int(CoronaHeaders.NEW_CASES):
-            renderer.set_property("foreground", "rgb(255, 145, 0)")
+            colour = orange
+            if value < 0:
+                colour = blue
+            renderer.set_property("foreground", colour)
 
         if data == int(CoronaHeaders.NEW_DEATHS):
-            renderer.set_property("foreground", "rgb(220, 0, 0)")
+            colour = red
+            if value < 0:
+                colour = blue
+            renderer.set_property("foreground", colour)
 
         if data == int(CoronaHeaders.NEW_RECOVERED):
-            renderer.set_property("foreground", "rgb(0, 160, 0)")
+            colour = green
+            if value < 0:
+                colour = red
+            renderer.set_property("foreground", colour)
 
     def set_filter(self, text: str):
         if self.table:
@@ -237,9 +255,6 @@ class MainController(GObject.Object):
         def sanitise_value(value: str):
             sanitised_value = value.replace(",", "").strip()
 
-            # For New Whatever values which have a + at the start
-            if len(sanitised_value) > 0 and sanitised_value[0] == "+":
-                sanitised_value = sanitised_value[1:]
             if sanitised_value == "N/A":
                 sanitised_value = None
 

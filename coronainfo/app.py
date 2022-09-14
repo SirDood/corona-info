@@ -23,17 +23,17 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Gio
 
+# noinspection PyUnresolvedReferences
 from coronainfo import _logger  # Unused but is necessary to initialise the logger
-from coronainfo.enums import App, Paths
+from coronainfo.enums import App
 from coronainfo.settings import AppSettings
 from coronainfo.views import MainWindow, AboutDialog
 from coronainfo.utils.ui_helpers import create_action, log_action_call
-from coronainfo.utils.files import get_json
 
 
 class CoronaInfoApp(Gtk.Application):
     _schema = Gio.Settings(schema_id=App.ID)
-    _settings = AppSettings(**get_json(Paths.SETTINGS_JSON)) if Paths.SETTINGS_JSON.exists() else AppSettings.placeholder()
+    _settings = AppSettings.fetch_settings()
 
     def __init__(self):
         super().__init__(application_id=App.ID,
