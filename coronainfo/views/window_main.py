@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from gi.repository import GObject, Gio, Gtk
+from gi.repository import Adw, GObject, Gio, Gtk
 
 from coronainfo import app
 from coronainfo.controllers import AppController
@@ -24,7 +24,7 @@ from coronainfo.views.dialog_preferences import PreferencesDialog
 
 
 @Gtk.Template(resource_path="/coronainfo/ui/main-window")
-class MainWindow(Gtk.ApplicationWindow):
+class MainWindow(Adw.ApplicationWindow):
     __gtype_name__ = "MainWindow"
 
     refresh_btn: Gtk.Button = Gtk.Template.Child(name="refresh_btn")

@@ -21,7 +21,7 @@ import sys
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Gio
+from gi.repository import Gio, Adw
 
 # noinspection PyUnresolvedReferences
 from coronainfo import _logger  # Unused but is necessary to initialise the logger
@@ -31,7 +31,7 @@ from coronainfo.views import MainWindow, AboutDialog
 from coronainfo.utils.ui_helpers import create_action, log_action_call
 
 
-class CoronaInfoApp(Gtk.Application):
+class CoronaInfoApp(Adw.Application):
     _schema = Gio.Settings(schema_id=App.ID)
     _settings = AppSettings.fetch_settings()
 
