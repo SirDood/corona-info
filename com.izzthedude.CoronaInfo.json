@@ -12,7 +12,6 @@
     "--socket=wayland",
     "--socket=session-bus",
     "--filesystem=xdg-run/gvfsd",
-    "--filesystem=xdg-cache",
     "--filesystem=~/.themes:ro",
     "--filesystem=/usr/share/themes:ro"
   ],

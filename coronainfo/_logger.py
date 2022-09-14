@@ -6,7 +6,7 @@ from datetime import datetime
 from coronainfo.enums import Date, Paths
 
 FILE_NAME = str(Paths.LOGS_DIR / f"coronainfo_{datetime.now().strftime(Date.FILE_FORMAT)}.log")
-FORMAT = "[%(asctime)s | %(levelname)s | %(filename)s %(lineno)s]: %(message)s"
+FORMAT = "[%(asctime)s | %(levelname)s]: %(message)s"
 DATE_FORMAT = Date.RAW_FORMAT
 LEVEL = logging.DEBUG if os.environ.get("CORONAINFO_DEBUG") else logging.INFO
 
