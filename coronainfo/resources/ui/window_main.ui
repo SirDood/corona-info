@@ -62,6 +62,14 @@
                   </object>
                 </child>
                 <child>
+                  <object class="AdwStatusPage" id="statuspage">
+                    <property name="visible">false</property>
+                    <property name="vexpand">true</property>
+                    <property name="icon-name">system-search-symbolic</property>
+                    <property name="title">No Results Found</property>
+                  </object>
+                </child>
+                <child>
                   <object class="GtkScrolledWindow">
                     <child>
                       <object class="GtkTreeView" id="table_view">
@@ -75,7 +83,6 @@
             </child>
             <child>
               <object class="GtkBox" id="spinner_box">
-                <property name="visible">false</property>
                 <property name="hexpand">true</property>
                 <property name="vexpand">true</property>
                 <property name="valign">center</property>

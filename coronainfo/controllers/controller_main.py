@@ -16,6 +16,7 @@ class MainController(GObject.Object):
     POPULATE_STARTED = "velvet-massager"
     POPULATE_FINISHED = "cube-helpless"
     PROGRESS_MESSAGE = "absurd-frosted"
+    MODEL_EMPTY = "vintage-next"
 
     def __init__(self):
         super().__init__()
@@ -176,6 +177,9 @@ class MainController(GObject.Object):
             model_proxy: Gtk.TreeModelSort = Gtk.TreeModelSort.new_with_model(model_filter)
             self.table.set_model(model_proxy)
 
+            if len(model_proxy) == 0:
+                self.emit(self.MODEL_EMPTY)
+
     def visible_func(self, model: Gtk.ListStore, tree_iter: Gtk.TreeIter, data):
         if not self.country_filter:
             return True
@@ -289,6 +293,14 @@ class MainController(GObject.Object):
             GObject.SignalFlags.RUN_LAST,
             GObject.TYPE_BOOLEAN,
             [str]
+        )
+
+        GObject.signal_new(
+            self.MODEL_EMPTY,
+            self,
+            GObject.SignalFlags.RUN_LAST,
+            GObject.TYPE_BOOLEAN,
+            []
         )
 
     def _bind_column_settings(self, column: Gtk.TreeViewColumn):

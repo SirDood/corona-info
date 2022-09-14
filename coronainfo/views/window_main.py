@@ -38,6 +38,7 @@ class MainWindow(Adw.ApplicationWindow):
     table_box: Gtk.Box = Gtk.Template.Child(name="table_box")
     searchbar: Gtk.SearchBar = Gtk.Template.Child(name="searchbar")
     search_entry: Gtk.SearchEntry = Gtk.Template.Child(name="search_entry")
+    statuspage: Adw.StatusPage = Gtk.Template.Child(name="statuspage")
     table: Gtk.TreeView = Gtk.Template.Child(name="table_view")
 
     def __init__(self, **kwargs):
@@ -62,6 +63,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.controller.connect(self.controller.POPULATE_STARTED, self.on_populate_started)
         self.controller.connect(self.controller.POPULATE_FINISHED, self.on_populate_finished)
         self.controller.connect(self.controller.PROGRESS_MESSAGE, self.on_progress_emitted)
+        self.controller.connect(self.controller.MODEL_EMPTY, self.on_model_empty)
         self.controller.start_populate()
 
     def on_populate_started(self, controller):
@@ -98,7 +100,13 @@ class MainWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_search(self, entry: Gtk.SearchEntry):
+        self.table.set_visible(True)
         self.controller.set_filter(entry.get_text())
+
+    def on_model_empty(self, controller):
+        search = self.search_entry.get_text()
+        self.statuspage.set_title(f"`{search}` Not Found")
+        self.statuspage.set_visible(True)
 
     def _init_settings(self):
         settings = app.get_schema()
@@ -135,6 +143,13 @@ class MainWindow(Adw.ApplicationWindow):
             self.searchbar,
             "search-mode-enabled",
             GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE
+        )
+
+        self.statuspage.bind_property(
+            "visible",
+            self.table,
+            "visible",
+            GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE | GObject.BindingFlags.INVERT_BOOLEAN
         )
 
         self.spinner_box.bind_property(
