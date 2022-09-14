@@ -6,6 +6,7 @@
     <property name="content">
       <object class="GtkBox">
         <property name="orientation">vertical</property>
+        <!-- Header Bar -->
         <child>
           <object class="AdwHeaderBar" id="header_bar">
             <child type="start">
@@ -43,55 +44,60 @@
             </child>
           </object>
         </child>
+        <!-- Main Content -->
         <child>
-          <object class="GtkBox" id="content_box">
+          <object class="AdwToastOverlay" id="toast_overlay">
             <child>
-              <object class="GtkBox" id="table_box">
-                <property name="orientation">vertical</property>
-                <property name="hexpand">true</property>
-                <property name="vexpand">true</property>
+              <object class="GtkBox" id="content_box">
                 <child>
-                  <object class="GtkSearchBar" id="searchbar">
-                    <child>
-                      <object class="GtkSearchEntry" id="search_entry">
-                        <property name="placeholder-text">Search...</property>
-                        <property name="tooltip-text">Search by country name</property>
-                        <signal name="search-changed" handler="on_search"/>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-                <child>
-                  <object class="AdwStatusPage" id="statuspage">
-                    <property name="visible">false</property>
+                  <object class="GtkBox" id="table_box">
+                    <property name="orientation">vertical</property>
+                    <property name="hexpand">true</property>
                     <property name="vexpand">true</property>
-                    <property name="icon-name">system-search-symbolic</property>
-                    <property name="title">No Results Found</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkScrolledWindow">
                     <child>
-                      <object class="GtkTreeView" id="table_view">
+                      <object class="GtkSearchBar" id="searchbar">
+                        <child>
+                          <object class="GtkSearchEntry" id="search_entry">
+                            <property name="placeholder-text">Search...</property>
+                            <property name="tooltip-text">Search by country name</property>
+                            <signal name="search-changed" handler="on_search"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwStatusPage" id="statuspage">
+                        <property name="visible">false</property>
                         <property name="vexpand">true</property>
-                        <property name="enable-search">false</property>
+                        <property name="icon-name">system-search-symbolic</property>
+                        <property name="title">No Results Found</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <child>
+                          <object class="GtkTreeView" id="table_view">
+                            <property name="vexpand">true</property>
+                            <property name="enable-search">false</property>
+                          </object>
+                        </child>
                       </object>
                     </child>
                   </object>
                 </child>
-              </object>
-            </child>
-            <child>
-              <object class="GtkBox" id="spinner_box">
-                <property name="hexpand">true</property>
-                <property name="vexpand">true</property>
-                <property name="valign">center</property>
-                <property name="halign">center</property>
                 <child>
-                  <object class="GtkSpinner" id="spinner">
-                    <property name="width-request">40</property>
-                    <property name="height-request">40</property>
-                    <property name="spinning">true</property>
+                  <object class="GtkBox" id="spinner_box">
+                    <property name="hexpand">true</property>
+                    <property name="vexpand">true</property>
+                    <property name="valign">center</property>
+                    <property name="halign">center</property>
+                    <child>
+                      <object class="GtkSpinner" id="spinner">
+                        <property name="width-request">40</property>
+                        <property name="height-request">40</property>
+                        <property name="spinning">true</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>

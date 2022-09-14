@@ -30,6 +30,7 @@ class MainWindow(Adw.ApplicationWindow):
     refresh_btn: Gtk.Button = Gtk.Template.Child(name="refresh_btn")
     search_btn: Gtk.ToggleButton = Gtk.Template.Child(name="search_btn")
 
+    toast_overlay: Adw.ToastOverlay = Gtk.Template.Child(name="toast_overlay")
     content_box: Gtk.Box = Gtk.Template.Child(name="content_box")
 
     spinner_box: Gtk.Box = Gtk.Template.Child(name="spinner_box")
@@ -59,11 +60,12 @@ class MainWindow(Adw.ApplicationWindow):
         self.searchbar.set_key_capture_widget(self)
 
         self.controller = AppController.get_main_controller()
-        self.controller.set_table(self.table)
         self.controller.connect(self.controller.POPULATE_STARTED, self.on_populate_started)
         self.controller.connect(self.controller.POPULATE_FINISHED, self.on_populate_finished)
         self.controller.connect(self.controller.PROGRESS_MESSAGE, self.on_progress_emitted)
         self.controller.connect(self.controller.MODEL_EMPTY, self.on_model_empty)
+        self.controller.connect(self.controller.TOAST_MESSAGE, self.on_error_message)
+        self.controller.set_table(self.table)
         self.controller.start_populate()
 
     def on_populate_started(self, controller):
@@ -78,6 +80,10 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_progress_emitted(self, controller, message: str):
         self.set_title(message)
+
+    def on_error_message(self, controller, message: str, timeout: int = 0):
+        toast = Adw.Toast(title=message, timeout=timeout)
+        self.toast_overlay.add_toast(toast)
 
     def on_refresh_action(self, action: Gio.SimpleAction, param):
         log_action_call(action)
