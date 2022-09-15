@@ -85,6 +85,6 @@ def get_settings() -> AppSettings:
     return CoronaInfoApp.get_settings()
 
 
-def main(version):
+def main():
     app = CoronaInfoApp()
     return app.run(sys.argv)

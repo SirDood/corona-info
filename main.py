@@ -37,8 +37,6 @@ def install_icons(source: Path, destination: Path):
 
 
 def main():
-    from gi.repository import Gio
-
     # Set environment variable(s)
     os.environ["CORONAINFO_DEBUG"] = "1"
 
@@ -67,13 +65,13 @@ def main():
     installed_icons = install_icons(SCICONS_SRC, SCICONS_DEST) + install_icons(SYICONS_SRC, SYICONS_DEST)
 
     # Load resources
+    from gi.repository import Gio
     resource = Gio.Resource.load(str(GRESOURCE_BIN))
     resource._register()
 
     # Run app
     from coronainfo import app
-    from coronainfo.enums import App
-    code = app.main(App.VERSION)
+    code = app.main()
 
     # Delete icons after app quits
     for icon in installed_icons:
