@@ -1,5 +1,5 @@
 import typing
-from dataclasses import Field, astuple, fields, asdict
+from dataclasses import Field, asdict, astuple, fields
 from enum import Enum
 from typing import Iterable
 

@@ -1,6 +1,6 @@
 import json
-from typing import Union
 from pathlib import Path
+from typing import Union
 
 
 def write_file(file_path: Union[str, Path], content: str):

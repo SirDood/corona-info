@@ -9,7 +9,7 @@ from coronainfo.enums import App, Date, Paths
 from coronainfo.models import CoronaData, CoronaHeaders
 from coronainfo.utils.files import get_json, write_json
 from coronainfo.utils.functions import convert_to_num
-from coronainfo.utils.ui_helpers import run_in_thread, evaluate_title
+from coronainfo.utils.ui_helpers import evaluate_title, run_in_thread
 
 
 class MainController(GObject.Object):
