@@ -1,15 +1,13 @@
 import logging
 from datetime import datetime
 
-from bs4 import BeautifulSoup, Tag
 from gi.repository import GLib, GObject, Gio, Gtk
 
 from coronainfo import app
 from coronainfo.enums import App, Date, Paths
-from coronainfo.models import CoronaData, CoronaHeaders
 from coronainfo.utils.files import get_json, write_json
-from coronainfo.utils.functions import convert_to_num
 from coronainfo.utils.ui_helpers import create_signal, evaluate_title, run_in_thread
+from coronainfo.utils.worldometer import CoronaData, CoronaHeaders, fetch_data
 
 
 class MainController(GObject.Object):
@@ -25,7 +23,7 @@ class MainController(GObject.Object):
 
         self.table: Gtk.TreeView = None
 
-        field_types = tuple(field.type for field in CoronaData.get_fields())
+        field_types = CoronaData.field_types()
         logging.debug(f"Model field types: {field_types}")
         self.model = Gtk.ListStore(*field_types)
         self.country_filter = ""
@@ -43,7 +41,7 @@ class MainController(GObject.Object):
 
         # Update title
         display = evaluate_title(app.get_settings())
-        self.update_progress(display)
+        self._update_progress(display)
 
     def on_refresh(self):
         if not self.is_populating:
@@ -126,7 +124,7 @@ class MainController(GObject.Object):
             renderer.set_property("height", 30)
 
             column = Gtk.TreeViewColumn(title, renderer, text=i)
-            column.set_cell_data_func(renderer, self.cell_data_func, func_data=i)
+            column.set_cell_data_func(renderer, self._cell_data_func, func_data=i)
             column.set_alignment(0.5)
             column.set_sort_column_id(i)
             column.set_expand(True)
@@ -134,11 +132,11 @@ class MainController(GObject.Object):
 
             self.table.append_column(column)
 
-    def cell_data_func(self, column: Gtk.TreeViewColumn,
-                       renderer: Gtk.CellRendererText,
-                       model: Gtk.TreeModelSort,
-                       tree_iter: Gtk.TreeIter,
-                       data):  # column number
+    def _cell_data_func(self, column: Gtk.TreeViewColumn,
+                        renderer: Gtk.CellRendererText,
+                        model: Gtk.TreeModelSort,
+                        tree_iter: Gtk.TreeIter,
+                        data):  # column number
 
         value = model.get(tree_iter, data)[0]
         if isinstance(value, int):
@@ -178,21 +176,21 @@ class MainController(GObject.Object):
         if self.table:
             self.country_filter = text
             model_filter: Gtk.TreeModelFilter = self.model.filter_new()
-            model_filter.set_visible_func(self.visible_func)
+            model_filter.set_visible_func(self._visible_func)
             model_proxy: Gtk.TreeModelSort = Gtk.TreeModelSort.new_with_model(model_filter)
             self.table.set_model(model_proxy)
 
             if len(model_proxy) == 0:
                 self.emit(self.MODEL_EMPTY)
 
-    def visible_func(self, model: Gtk.ListStore, tree_iter: Gtk.TreeIter, data):
+    def _visible_func(self, model: Gtk.ListStore, tree_iter: Gtk.TreeIter, data):
         if not self.country_filter:
             return True
 
         country = model[tree_iter][int(CoronaHeaders.COUNTRY)]
         return self.country_filter.lower() in country.lower()
 
-    def update_progress(self, message: str):
+    def _update_progress(self, message: str):
         # TODO: look into fixing the 'Trying to snapshot XXX without a current allocation' error
         self.emit(self.PROGRESS_MESSAGE, message)
 
@@ -211,11 +209,11 @@ class MainController(GObject.Object):
 
         if not cache_file.exists() or not use_cache:
             message = "Fetching data..."
-            self.update_progress(message)
+            self._update_progress(message)
             logging.info(message)
-            dataset = self._fetch_data()
+            dataset = fetch_data()
             logging.debug(f"Caching data at {cache_file}")
-            write_json(cache_file, [row.as_dict() for row in dataset])
+            write_json(cache_file, dataset)
 
             # Update last_fetched settings
             today = datetime.now().strftime(Date.RAW_FORMAT)
@@ -224,59 +222,10 @@ class MainController(GObject.Object):
             settings.last_fetched = today
 
         message = "Reading data..."
-        self.update_progress(message)
+        self._update_progress(message)
         logging.info(message)
         json_data = get_json(cache_file)
         result = map(lambda row: CoronaData(**row), json_data)
-        return result
-
-    def _fetch_data(self) -> map:
-        fetch_url: Gio.File = Gio.File.new_for_uri("https://www.worldometers.info/coronavirus/")
-        try:
-            success, content, etag = fetch_url.load_contents(None)
-
-            # Parse html content and find the table for today
-            logging.info("Parsing fetched data...")
-            soup = BeautifulSoup(content, "html.parser")
-            table = soup.find(id="main_table_countries_today")
-            table_body = table.find("tbody")
-
-            message = "Parsing table HTML..."
-            self.update_progress(message)
-            logging.info(message)
-            result = self._parse_table_html(table_body)
-            return result
-
-        except GLib.Error as err:
-            logging.error("An error has occurred while fetching data:", exc_info=True)
-            self.emit(
-                self.TOAST_MESSAGE,
-                f"An error has occurred while fetching data. Refer the logs at {Paths.LOGS_DIR}",
-                0)
-
-    def _parse_table_html(self, table: Tag) -> map:
-        countries: list[Tag] = table.find_all("tr")[7:]
-        result = map(lambda country: sanitise_row(country), countries)
-
-        def sanitise_row(clean_row: Tag):
-            row_data = clean_row.find_all("td")[1:15]
-            sanitised_row = map(lambda value: sanitise_value(value.text), row_data)
-            clean_row = CoronaData(*sanitised_row)
-
-            return clean_row
-
-        def sanitise_value(value: str):
-            sanitised_value = value.replace(",", "").strip()
-
-            if sanitised_value == "N/A":
-                sanitised_value = None
-
-            clean_value = convert_to_num(sanitised_value)
-            if isinstance(clean_value, float):
-                clean_value = int(clean_value)
-
-            return clean_value
-
         return result
 
     def _setup_signals(self):

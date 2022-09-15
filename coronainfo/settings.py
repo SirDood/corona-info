@@ -1,13 +1,12 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 from coronainfo.enums import Paths
-from coronainfo.models.model_base import BaseData
 from coronainfo.utils.files import get_json, write_json
 
 
 @dataclass
-class AppSettings(BaseData):
+class AppSettings:
     last_fetched: str
 
     @classmethod
@@ -33,4 +32,4 @@ class AppSettings(BaseData):
     def commit(self):
         path = Paths.SETTINGS_JSON
         logging.debug(f"Saving app settings to: {path}")
-        write_json(path, self.as_dict())
+        write_json(path, asdict(self))
