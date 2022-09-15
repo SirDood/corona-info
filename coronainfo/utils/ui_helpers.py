@@ -64,22 +64,31 @@ class TaskManager(GObject.Object):
         create_signal(self, self.ERROR, [object])  # param_type is Exception
 
 
-def run_in_thread(func: Callable, on_finish: Callable = None,
-                  func_args: tuple = (), on_finish_args: tuple = (),
-                  cancellable: Gio.Cancellable = Gio.Cancellable()) -> TaskManager:
+def run_in_thread(func: Callable, func_args: tuple = (),
+                  on_finish: Callable = None, on_finish_args: tuple = (),
+                  on_error: Callable = None, on_error_args: tuple = ()) -> TaskManager:
     def on_finish_wrapper(task: TaskManager, result):
         on_finish_name = on_finish.__name__
-        logging.debug(f"Worker running on_finish: {on_finish_name}{on_finish_args}")
+        logging.debug(f"Running on_finish: {on_finish_name}{on_finish_args}")
 
         try:
             on_finish(*on_finish_args)
         except Exception as err:
             logging.error(f"An error has occurred while running '{on_finish_name}' in thread:", exc_info=True)
 
+    def on_error_wrapper(task: TaskManager, error: Exception):
+        on_error_name = on_error.__name__
+        logging.debug(f"Running on_error: {on_error_name}{on_finish_args}")
+
+        try:
+            on_error(*on_error_args, error)
+        except Exception as err:
+            logging.error(f"An error has occurred while running '{on_error_name}' in thread:", exc_info=True)
+
     task = TaskManager(func, *func_args)
-    task.set_cancellable(cancellable)
-    if on_finish:
-        task.connect(task.FINISHED, on_finish_wrapper)
+    if on_finish: task.connect(task.FINISHED, on_finish_wrapper)
+    if on_error: task.connect(task.ERROR, on_error_wrapper)
+
     task.start()
 
     return task

@@ -59,7 +59,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.controller.connect(self.controller.POPULATE_STARTED, self.on_populate_started)
         self.controller.connect(self.controller.POPULATE_FINISHED, self.on_populate_finished)
         self.controller.connect(self.controller.PROGRESS_MESSAGE, self.on_progress_emitted)
-        self.controller.connect(self.controller.TOAST_MESSAGE, self.on_error_message)
+        self.controller.connect(self.controller.TOAST_MESSAGE, self.on_toast_message)
+        self.controller.connect(self.controller.ERROR_OCCURRED, self.on_error_message)
 
         create_action(self, "refresh-data", self.on_refresh_action, ["<Ctrl>r"])
         create_action(self, "save-data", self.on_save_action, ["<Ctrl>s"])
@@ -85,9 +86,13 @@ class MainWindow(Adw.ApplicationWindow):
     def on_progress_emitted(self, controller, message: str):
         self.set_title(message)
 
-    def on_error_message(self, controller, message: str, timeout: int = 0):
+    def on_toast_message(self, controller, message: str, timeout: int = 0):
         toast = Adw.Toast(title=message, timeout=timeout)
         self.toast_overlay.add_toast(toast)
+
+    def on_error_message(self, controller, message: str):
+        # TODO: maybe do this in MainContentView instead and access statuspage there
+        logging.debug(f"Error message: {message}")
 
     def on_refresh_action(self, action: Gio.SimpleAction, param):
         log_action_call(action)

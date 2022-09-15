@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-from gi.repository import GLib, GObject, Gio, Gtk
+from gi.repository import GObject, Gio, Gtk
 
 from coronainfo import app
 from coronainfo.enums import App, Date, Paths
@@ -16,6 +16,7 @@ class MainController(GObject.Object):
     PROGRESS_MESSAGE = "absurd-frosted"
     MODEL_EMPTY = "vintage-next"
     TOAST_MESSAGE = "untwist-unicycle"
+    ERROR_OCCURRED = "enforcer-pope"
 
     def __init__(self):
         super().__init__()
@@ -32,12 +33,13 @@ class MainController(GObject.Object):
         self.is_populating = False
 
     def start_populate(self):
-        run_in_thread(self._populate_data, self._on_populate_finished)
+        run_in_thread(self._populate_data, on_finish=self._on_populate_finished, on_error=self._on_task_error)
 
     def on_refresh(self):
         if not self.is_populating:
             self.model.clear()
-            run_in_thread(self._populate_data, self._on_populate_finished, func_args=(False,))
+            run_in_thread(self._populate_data, (False,),
+                          on_finish=self._on_populate_finished)
         else:
             message = "Refresh in progress!"
             logging.warning(message)
@@ -66,7 +68,8 @@ class MainController(GObject.Object):
         logging.debug(f"Response type: {Gtk.ResponseType(response).value_name}")
         if response == Gtk.ResponseType.ACCEPT:
             dest_path = dialog.get_file().get_path()
-            run_in_thread(self._save_file, self._on_save_finished, func_args=(dest_path,), on_finish_args=(dest_path,))
+            run_in_thread(self._save_file, (dest_path,),
+                          on_finish=self._on_save_finished, on_finish_args=(dest_path,))
 
         dialog.destroy()
 
@@ -85,6 +88,10 @@ class MainController(GObject.Object):
         message = f"Successfully saved data to {destination}"
         logging.info(message)
         self._update_toast(message, 3)
+
+    def _on_task_error(self, error: Exception):
+        logging.debug(f"On task error: {type(error)}: {error}")
+        self.emit(self.ERROR_OCCURRED, str(error))
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -209,6 +216,7 @@ class MainController(GObject.Object):
         create_signal(self, self.PROGRESS_MESSAGE, [str])
         create_signal(self, self.MODEL_EMPTY)
         create_signal(self, self.TOAST_MESSAGE, [str, int])
+        create_signal(self, self.ERROR_OCCURRED, [str])
 
     def _bind_column_settings(self, column: Gtk.TreeViewColumn):
         title = column.get_title()
