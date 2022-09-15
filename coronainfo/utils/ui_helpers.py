@@ -59,29 +59,9 @@ class TaskManager(GObject.Object):
         self.emit(self.FINISHED, result)
 
     def _setup_signals(self):
-        GObject.signal_new(
-            self.STARTED,
-            self,
-            GObject.SignalFlags.RUN_LAST,
-            GObject.TYPE_BOOLEAN,
-            []
-        )
-
-        GObject.signal_new(
-            self.FINISHED,
-            self,
-            GObject.SignalFlags.RUN_LAST,
-            GObject.TYPE_BOOLEAN,
-            [object]
-        )
-
-        GObject.signal_new(
-            self.ERROR,
-            self,
-            GObject.SignalFlags.RUN_LAST,
-            GObject.TYPE_BOOLEAN,
-            [object]  # Exception
-        )
+        create_signal(self, self.STARTED)
+        create_signal(self, self.FINISHED, [object])
+        create_signal(self, self.ERROR, [object])  # param_type is Exception
 
 
 def run_in_thread(func: Callable, on_finish: Callable = None,
@@ -118,6 +98,16 @@ def create_action(self: Union[Gtk.Application, Gtk.ApplicationWindow], name: str
             origin = "win"
 
         app.set_accels_for_action(f"{origin}.{name}", shortcuts)
+
+
+def create_signal(source: GObject.Object, name: str, param_types: list = []):
+    GObject.signal_new(
+        name,  # Signal message
+        source,  # A Python GObject instance or type that the signal is associated with
+        GObject.SignalFlags.RUN_LAST,  # Signal flags
+        GObject.TYPE_BOOLEAN,  # Return type of the signal handler
+        param_types  # Parameter types
+    )
 
 
 def evaluate_title(settings: AppSettings) -> str:

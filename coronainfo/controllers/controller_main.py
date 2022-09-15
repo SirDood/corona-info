@@ -9,7 +9,7 @@ from coronainfo.enums import App, Date, Paths
 from coronainfo.models import CoronaData, CoronaHeaders
 from coronainfo.utils.files import get_json, write_json
 from coronainfo.utils.functions import convert_to_num
-from coronainfo.utils.ui_helpers import evaluate_title, run_in_thread
+from coronainfo.utils.ui_helpers import create_signal, evaluate_title, run_in_thread
 
 
 class MainController(GObject.Object):
@@ -280,45 +280,11 @@ class MainController(GObject.Object):
         return result
 
     def _setup_signals(self):
-        GObject.signal_new(
-            self.POPULATE_STARTED,  # Signal message
-            self,  # A Python GObject instance or type that the signal is associated with
-            GObject.SignalFlags.RUN_LAST,  # Signal flags
-            GObject.TYPE_BOOLEAN,  # Return type of the signal handler
-            []  # Parameter types
-        )
-
-        GObject.signal_new(
-            self.POPULATE_FINISHED,
-            self,
-            GObject.SignalFlags.RUN_LAST,
-            GObject.TYPE_BOOLEAN,
-            []
-        )
-
-        GObject.signal_new(
-            self.PROGRESS_MESSAGE,
-            self,
-            GObject.SignalFlags.RUN_LAST,
-            GObject.TYPE_BOOLEAN,
-            [str]
-        )
-
-        GObject.signal_new(
-            self.MODEL_EMPTY,
-            self,
-            GObject.SignalFlags.RUN_LAST,
-            GObject.TYPE_BOOLEAN,
-            []
-        )
-
-        GObject.signal_new(
-            self.TOAST_MESSAGE,
-            self,
-            GObject.SignalFlags.RUN_LAST,
-            GObject.TYPE_BOOLEAN,
-            [str, int]
-        )
+        create_signal(self, self.POPULATE_STARTED)
+        create_signal(self, self.POPULATE_FINISHED)
+        create_signal(self, self.PROGRESS_MESSAGE, [str])
+        create_signal(self, self.MODEL_EMPTY)
+        create_signal(self, self.TOAST_MESSAGE, [str, int])
 
     def _bind_column_settings(self, column: Gtk.TreeViewColumn):
         title = column.get_title()
