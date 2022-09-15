@@ -54,23 +54,15 @@ class MainController(GObject.Object):
             logging.warning(message)
             self.emit(self.TOAST_MESSAGE, message, 2)
 
-    def on_save(self, window: Gtk.ApplicationWindow):
-        self._dialog = Gtk.FileChooserNative(
-            title="Save File as",
-            transient_for=window,
-            action=Gtk.FileChooserAction.SAVE,
-            accept_label="_Save",
-            cancel_label="_Cancel"
-        )
-
+    def on_save(self, dialog: Gtk.FileChooserNative):
         name = App.NAME.replace(' ', '')
         date = datetime.fromisoformat(app.get_settings().last_fetched).date()
         file_name = f"{name}_{date}.json"
         downloads_dir = Gio.File.new_for_path(str(Paths.DOWNLOADS_DIR))
-        self._dialog.set_current_name(file_name)
-        self._dialog.set_current_folder(downloads_dir)
-        self._dialog.connect("response", self.on_save_response)
-        self._dialog.show()
+        dialog.set_current_name(file_name)
+        dialog.set_current_folder(downloads_dir)
+        dialog.connect("response", self.on_save_response)
+        dialog.show()
 
     def on_save_response(self, dialog: Gtk.FileChooserNative, response: int):
         logging.debug(f"Response type: {Gtk.ResponseType(response).value_name}")
@@ -89,7 +81,7 @@ class MainController(GObject.Object):
                     f"An error has occurred while attempting to save data. Refer the logs at {Paths.LOGS_DIR}",
                     0)
 
-        self._dialog.destroy()
+        dialog.destroy()
 
     def on_read_cache_complete(self, file: Gio.File, result: Gio.AsyncResult, dest_file: Gio.File):
         try:
@@ -122,7 +114,7 @@ class MainController(GObject.Object):
 
         message = f"Successfully saved data to {path}"
         logging.info(message)
-        self.emit(self.TOAST_MESSAGE, message, 2)
+        self.emit(self.TOAST_MESSAGE, message, 3)
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table

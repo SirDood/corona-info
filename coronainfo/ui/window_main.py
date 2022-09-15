@@ -95,7 +95,15 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_save_action(self, action: Gio.SimpleAction, param):
         log_action_call(action)
-        self.controller.on_save(self)
+
+        self._dialog = Gtk.FileChooserNative(
+            title="Save File as",
+            transient_for=self,
+            action=Gtk.FileChooserAction.SAVE,
+            accept_label="_Save",
+            cancel_label="_Cancel"
+        )
+        self.controller.on_save(self._dialog)
 
     def on_preferences_action(self, action: Gio.SimpleAction, param):
         preferences = PreferencesDialog(self)
