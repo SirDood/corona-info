@@ -23,7 +23,7 @@ from gi.repository import Adw, GObject, Gio, Gtk
 from coronainfo import app
 from coronainfo.controllers import AppController
 from coronainfo.utils.ui_helpers import create_action, evaluate_title, log_action_call
-from coronainfo.views.dialog_preferences import PreferencesDialog
+from coronainfo.ui.dialog_preferences import PreferencesDialog
 
 
 @Gtk.Template(resource_path="/com.izzthedude.CoronaInfo/ui/main-window")
