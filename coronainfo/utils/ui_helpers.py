@@ -1,27 +1,93 @@
 import logging
 from datetime import datetime
-from typing import Callable, Union
+from typing import Any, Callable, Union
 
-from gi.repository import GObject, Gio, Gtk
+from gi.repository import GLib, GObject, Gio, Gtk
 
 from coronainfo.enums import App, Date
 from coronainfo.settings import AppSettings
 
 
-def run_in_thread(func: Callable, on_finish: Callable = None,
-                  func_args: tuple = (), on_finish_args: tuple = (),
-                  cancellable: Gio.Cancellable = Gio.Cancellable()) -> Gio.Task:
-    # TODO: figure out better ways to do this lmao
-    def func_wrapper(task: Gio.Task, arg2, arg3, cancellable: Gio.Cancellable = None):
-        func_name = func.__name__
-        logging.debug(f"Worker running function: {func_name}{func_args}")
+class TaskManager(GObject.Object):
+    STARTED = "snowsuit-greeting"
+    FINISHED = "mango-eggplant"
+    ERROR = "xbox-rebate"
+
+    def __init__(self, func: Callable, *args, **kwargs):
+        super().__init__()
+        if not GObject.signal_list_names(self):
+            self._setup_signals()
+
+        # TODO: Add cancel functionality
+
+        self._func = func
+        self._args = args
+        self._kwargs = kwargs
+
+        self._source = None
+        self._cancellable = None
+
+    def set_source(self, source: Any):
+        self._source = source
+
+    def set_cancellable(self, cancellable: Gio.Cancellable):
+        self._cancellable = cancellable
+
+    def start(self):
+        task: Gio.Task = Gio.Task.new(self._source, self._cancellable, self._ready_wrapper, None)
+        task.run_in_thread(self._func_wrapper)
+
+    def _func_wrapper(self, task: Gio.Task, source, data, cancellable: Gio.Cancellable):
+        func_name = self._func.__name__
+        logging.debug(f"Worker running function: {func_name}{self._args}{self._kwargs}")
 
         try:
-            func(*func_args)
+            self.emit(self.STARTED)
+            result = self._func(*self._args, **self._kwargs)
+            task.return_value(result)
         except Exception as err:
             logging.error(f"An error has occurred while running '{func_name}' in thread:", exc_info=True)
+            task.return_value(err)
 
-    def on_finish_wrapper(task: Gio.Task, status: GObject.ParamSpecBoolean):
+    def _ready_wrapper(self, source, task: Gio.Task, error):
+        result = task.propagate_value()[1]
+
+        if isinstance(result, BaseException) or isinstance(result, GLib.Error):
+            self.emit(self.ERROR, result)
+            return
+
+        self.emit(self.FINISHED, result)
+
+    def _setup_signals(self):
+        GObject.signal_new(
+            self.STARTED,
+            self,
+            GObject.SignalFlags.RUN_LAST,
+            GObject.TYPE_BOOLEAN,
+            []
+        )
+
+        GObject.signal_new(
+            self.FINISHED,
+            self,
+            GObject.SignalFlags.RUN_LAST,
+            GObject.TYPE_BOOLEAN,
+            [object]
+        )
+
+        GObject.signal_new(
+            self.ERROR,
+            self,
+            GObject.SignalFlags.RUN_LAST,
+            GObject.TYPE_BOOLEAN,
+            [object]  # Exception
+        )
+
+
+def run_in_thread(func: Callable, on_finish: Callable = None,
+                  func_args: tuple = (), on_finish_args: tuple = (),
+                  cancellable: Gio.Cancellable = Gio.Cancellable()) -> TaskManager:
+    def on_finish_wrapper(task: TaskManager, result):
         on_finish_name = on_finish.__name__
         logging.debug(f"Worker running on_finish: {on_finish_name}{on_finish_args}")
 
@@ -30,11 +96,11 @@ def run_in_thread(func: Callable, on_finish: Callable = None,
         except Exception as err:
             logging.error(f"An error has occurred while running '{on_finish_name}' in thread:", exc_info=True)
 
-    task: Gio.Task = Gio.Task.new(None, cancellable, None, None)
-    task.set_return_on_cancel(False)
+    task = TaskManager(func, *func_args)
+    task.set_cancellable(cancellable)
     if on_finish:
-        task.connect("notify::completed", on_finish_wrapper)
-    task.run_in_thread(func_wrapper)
+        task.connect(task.FINISHED, on_finish_wrapper)
+    task.start()
 
     return task
 
