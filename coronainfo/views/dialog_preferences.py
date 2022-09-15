@@ -3,7 +3,7 @@ import logging
 from gi.repository import Adw, GObject, Gtk
 
 
-@Gtk.Template(resource_path="/coronainfo/ui/preferences-dialog")
+@Gtk.Template(resource_path="/com.izzthedude.CoronaInfo/ui/preferences-dialog")
 class PreferencesDialog(Adw.PreferencesWindow):
     __gtype_name__ = "PreferencesDialog"
 

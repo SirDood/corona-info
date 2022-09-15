@@ -26,7 +26,7 @@ from coronainfo.utils.ui_helpers import create_action, evaluate_title, log_actio
 from coronainfo.views.dialog_preferences import PreferencesDialog
 
 
-@Gtk.Template(resource_path="/coronainfo/ui/main-window")
+@Gtk.Template(resource_path="/com.izzthedude.CoronaInfo/ui/main-window")
 class MainWindow(Adw.ApplicationWindow):
     __gtype_name__ = "MainWindow"
 
@@ -149,7 +149,7 @@ class MainWindow(Adw.ApplicationWindow):
         )
 
     def _setup_help_overlay(self):
-        builder: Gtk.Builder = Gtk.Builder.new_from_resource("/coronainfo/ui/help-overlay")
+        builder: Gtk.Builder = Gtk.Builder.new_from_resource("/com.izzthedude.CoronaInfo/ui/help-overlay")
         shortcuts_window: Gtk.ShortcutsWindow = builder.get_object("help_overlay")
         self.set_help_overlay(shortcuts_window)
 
