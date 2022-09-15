@@ -32,9 +32,18 @@ class MainController(GObject.Object):
         self.is_populating = False
 
     def start_populate(self):
-        run_in_thread(self._populate_data, self.on_populate_finished)
+        run_in_thread(self._populate_data, self._on_populate_finished)
 
-    def on_populate_finished(self):
+    def on_refresh(self):
+        if not self.is_populating:
+            self.model.clear()
+            run_in_thread(self._populate_data, self._on_populate_finished, func_args=(False,))
+        else:
+            message = "Refresh in progress!"
+            logging.warning(message)
+            self._update_toast(message, 2)
+
+    def _on_populate_finished(self):
         self.is_populating = False
         self.emit(self.POPULATE_FINISHED)
         logging.info("Data population finished")
@@ -43,15 +52,6 @@ class MainController(GObject.Object):
         display = evaluate_title(app.get_settings())
         self._update_progress(display)
 
-    def on_refresh(self):
-        if not self.is_populating:
-            self.model.clear()
-            run_in_thread(self._populate_data, self.on_populate_finished, func_args=(False,))
-        else:
-            message = "Refresh in progress!"
-            logging.warning(message)
-            self.emit(self.TOAST_MESSAGE, message, 2)
-
     def on_save(self, dialog: Gtk.FileChooserNative):
         name = App.NAME.replace(' ', '')
         date = datetime.fromisoformat(app.get_settings().last_fetched).date()
@@ -59,60 +59,32 @@ class MainController(GObject.Object):
         downloads_dir = Gio.File.new_for_path(str(Paths.DOWNLOADS_DIR))
         dialog.set_current_name(file_name)
         dialog.set_current_folder(downloads_dir)
-        dialog.connect("response", self.on_save_response)
+        dialog.connect("response", self._on_save_response)
         dialog.show()
 
-    def on_save_response(self, dialog: Gtk.FileChooserNative, response: int):
+    def _on_save_response(self, dialog: Gtk.FileChooserNative, response: int):
         logging.debug(f"Response type: {Gtk.ResponseType(response).value_name}")
         if response == Gtk.ResponseType.ACCEPT:
-            dest_file: Gio.File = dialog.get_file()
-            logging.info(f"Saving data to {dest_file.get_path()}")
-            try:
-                src_file: Gio.File = Gio.File.new_for_path(str(Paths.CACHE_JSON))
-                logging.debug(f"Attempting to read file: {src_file.get_path()}")
-                src_file.load_contents_async(None, self.on_read_cache_complete, dest_file)
-
-            except GLib.Error as err:
-                logging.error("An error has occurred while trying to read from cache while saving:", exc_info=True)
-                self.emit(
-                    self.TOAST_MESSAGE,
-                    f"An error has occurred while attempting to save data. Refer the logs at {Paths.LOGS_DIR}",
-                    0)
+            dest_path = dialog.get_file().get_path()
+            run_in_thread(self._save_file, self._on_save_finished, func_args=(dest_path,), on_finish_args=(dest_path,))
 
         dialog.destroy()
 
-    def on_read_cache_complete(self, file: Gio.File, result: Gio.AsyncResult, dest_file: Gio.File):
+    def _save_file(self, destination: str):
+        logging.info(f"Saving data to {destination}")
         try:
-            contents = file.load_contents_finish(result)[1]
-            contents_bytes = GLib.Bytes.new(contents)
-            logging.debug(f"Attempting to write to file: {dest_file.get_path()}")
-            dest_file.replace_contents_bytes_async(
-                contents_bytes,
-                None,
-                False,
-                Gio.FileCreateFlags.NONE,
-                None,
-                self.on_write_file_complete
-            )
-
-        except GLib.Error as err:
-            logging.error("An error has occurred while trying to write data:", exc_info=True)
-            self.emit(
-                self.TOAST_MESSAGE,
+            cache = get_json(Paths.CACHE_JSON)
+            write_json(destination, cache)
+        except Exception as err:
+            logging.error("An error has occurred while trying to read from cache while saving:", exc_info=True)
+            self._update_toast(
                 f"An error has occurred while attempting to save data. Refer the logs at {Paths.LOGS_DIR}",
                 0)
 
-    def on_write_file_complete(self, file: Gio.File, result: Gio.AsyncResult):
-        result = file.replace_contents_finish(result)
-        path = file.get_path()
-
-        if not result:
-            logging.warning(f"Unable to save data to {path}")
-            return
-
-        message = f"Successfully saved data to {path}"
+    def _on_save_finished(self, destination: str):
+        message = f"Successfully saved data to {destination}"
         logging.info(message)
-        self.emit(self.TOAST_MESSAGE, message, 3)
+        self._update_toast(message, 3)
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -193,6 +165,9 @@ class MainController(GObject.Object):
     def _update_progress(self, message: str):
         # TODO: look into fixing the 'Trying to snapshot XXX without a current allocation' error
         self.emit(self.PROGRESS_MESSAGE, message)
+
+    def _update_toast(self, message: str, timeout: int):
+        self.emit(self.TOAST_MESSAGE, message, timeout)
 
     def _populate_data(self, use_cache: bool = True):
         self.emit(self.POPULATE_STARTED)
