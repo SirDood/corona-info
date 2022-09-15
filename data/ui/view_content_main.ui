@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1.0"/>
+  <template class="MainContentView" parent="GtkBox">
+    <property name="orientation">vertical</property>
+    <property name="hexpand">true</property>
+    <property name="vexpand">true</property>
+    <child>
+      <object class="GtkSearchBar" id="searchbar">
+        <child>
+          <object class="GtkSearchEntry" id="search_entry">
+            <property name="placeholder-text">Search...</property>
+            <property name="tooltip-text">Search by country name</property>
+            <signal name="search-changed" handler="on_search"/>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwStatusPage" id="statuspage">
+        <property name="visible">false</property>
+        <property name="vexpand">true</property>
+        <property name="icon-name">system-search-symbolic</property>
+        <property name="title">No Results Found</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkScrolledWindow">
+        <child>
+          <object class="GtkTreeView" id="table_view">
+            <property name="vexpand">true</property>
+            <property name="enable-search">false</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

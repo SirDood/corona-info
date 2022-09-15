@@ -2,7 +2,9 @@
 <gresources>
   <gresource prefix="com.izzthedude.CoronaInfo/ui">
     <file alias="main-window">ui/window_main.ui</file>
+    <file alias="main-content-view">ui/view_content_main.ui</file>
+    <file alias="spinner-view">ui/view_spinner.ui</file>
     <file alias="preferences-dialog">ui/dialog_preferences.ui</file>
-    <file alias="help-overlay">ui/help-overlay.ui</file>
+    <file alias="help-overlay">ui/help_overlay.ui</file>
   </gresource>
 </gresources>
