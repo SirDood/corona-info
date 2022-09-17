@@ -20,7 +20,9 @@ class MainContentView(Gtk.Box):
         self.searchbar.set_key_capture_widget(window)
 
         self.controller = AppController.get_main_controller()
+        self.controller.connect(self.controller.POPULATE_FINISHED, self.on_populate_finished)
         self.controller.connect(self.controller.MODEL_EMPTY, self.on_model_empty)
+        self.controller.connect(self.controller.ERROR_OCCURRED, self.on_error_message)
         self.controller.set_table(self.table)
 
     def on_toggle_search_action(self, action: Gio.SimpleAction, param):
@@ -32,9 +34,20 @@ class MainContentView(Gtk.Box):
         self.table.set_visible(True)
         self.controller.set_filter(entry.get_text())
 
+    def on_populate_finished(self, controller):
+        self.table.set_visible(True)
+
     def on_model_empty(self, controller):
         search = self.search_entry.get_text()
+        self.statuspage.set_icon_name("system-search-symbolic")
         self.statuspage.set_title(f"`{search}` Not Found")
+        self.statuspage.set_description("")
+        self.statuspage.set_visible(True)
+
+    def on_error_message(self, controller, message: str):
+        self.statuspage.set_icon_name("dialog-error-symbolic")
+        self.statuspage.set_title("An error has occurred")
+        self.statuspage.set_description(message)
         self.statuspage.set_visible(True)
 
     def _bind_properties(self):

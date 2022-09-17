@@ -93,6 +93,7 @@ class MainWindow(Adw.ApplicationWindow):
     def on_error_message(self, controller, message: str):
         # TODO: maybe do this in MainContentView instead and access statuspage there
         logging.debug(f"Error message: {message}")
+        self.spinner_box.set_visible(False)
 
     def on_refresh_action(self, action: Gio.SimpleAction, param):
         log_action_call(action)

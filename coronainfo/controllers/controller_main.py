@@ -33,13 +33,16 @@ class MainController(GObject.Object):
         self.is_populating = False
 
     def start_populate(self):
-        run_in_thread(self._populate_data, on_finish=self._on_populate_finished, on_error=self._on_task_error)
+        run_in_thread(self._populate_data,
+                      on_finish=self._on_populate_finished,
+                      on_error=self._on_task_error)
 
     def on_refresh(self):
         if not self.is_populating:
             self.model.clear()
             run_in_thread(self._populate_data, (False,),
-                          on_finish=self._on_populate_finished)
+                          on_finish=self._on_populate_finished,
+                          on_error=self._on_task_error)
         else:
             message = "Refresh in progress!"
             logging.warning(message)
@@ -91,6 +94,7 @@ class MainController(GObject.Object):
 
     def _on_task_error(self, error: Exception):
         logging.debug(f"On task error: {type(error)}: {error}")
+        self.is_populating = False
         self.emit(self.ERROR_OCCURRED, str(error))
 
     def set_table(self, table: Gtk.TreeView):
