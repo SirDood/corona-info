@@ -123,13 +123,14 @@ class MainController(GObject.Object):
 
         value = model.get(tree_iter, data)[0]
         if isinstance(value, int):
-            display = f"{value:,}"
-
-            if "NEW" in CoronaHeaders.as_tuple()[data]:
-                prefix = ""
-                if value >= 0:
-                    prefix = "+"
-                display = prefix + display
+            display = ""
+            if value:
+                display = f"{value:,}"
+                if "NEW" in CoronaHeaders.as_tuple()[data] and value > 0:
+                    prefix = ""
+                    if value >= 0:
+                        prefix = "+"
+                    display = prefix + display
 
             renderer.set_property("text", display)
 
