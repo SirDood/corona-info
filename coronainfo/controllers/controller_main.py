@@ -156,27 +156,24 @@ class MainController(GObject.Object):
             dest_path = dialog.get_file().get_path()
             task = TaskManager(self._save_file, dest_path)
             task.set_on_finish(self._on_save_finished, dest_path)
+            task.set_on_error(self._on_save_error, dest_path)
             task.start()
 
         dialog.destroy()
 
     def _save_file(self, destination: str):
         logging.info(f"Saving data to {destination}")
-
-        try:
-            cache = get_json(Paths.CACHE_JSON)
-            write_json(destination, cache)
-
-        except Exception as err:
-            logging.error("An error has occurred while trying to read from cache while saving:", exc_info=True)
-            self._update_toast(
-                f"An error has occurred while attempting to save data. Refer the logs at {Paths.LOGS_DIR}",
-                0)
+        cache = get_json(Paths.CACHE_JSON)
+        write_json(destination, cache)
 
     def _on_save_finished(self, destination: str):
         message = f"Successfully saved data to {destination}"
         logging.info(message)
         self._update_toast(message, 5)
+
+    def _on_save_error(self, destination: str, error: Exception):
+        logging.warning(f"An error has occurred while attempting to save data:", exc_info=True)
+        self._update_toast(f"A(n) {type(error).__name__} has occurred. Could not save data to {destination}", 5)
 
     def _cell_data_func(self, column: Gtk.TreeViewColumn,
                         renderer: Gtk.CellRendererText,
