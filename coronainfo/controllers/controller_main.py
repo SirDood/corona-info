@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 
 from gi.repository import GObject, Gio, Gtk
-from requests import ConnectionError
+from requests import ConnectionError, HTTPError
 
 from coronainfo import app
 from coronainfo.enums import App, Date, Paths
@@ -32,7 +32,6 @@ class MainController(GObject.Object):
         self.set_filter(self.country_filter)
 
         self.is_populating = False
-        self.fetch_attempted = False
 
     def start_populate(self):
         run_in_thread(self._populate_data,
@@ -40,7 +39,6 @@ class MainController(GObject.Object):
                       on_error=self._on_populate_error)
 
     def on_refresh(self):
-        self.fetch_attempted = False
         if not self.is_populating:
             self.model.clear()
             run_in_thread(self._populate_data, (False,),
@@ -130,22 +128,22 @@ class MainController(GObject.Object):
         logging.info("Data population finished")
 
         # Update title
-        display = evaluate_title(app.get_settings())
-        self._update_progress(display)
+        title = evaluate_title(app.get_settings())
+        self._update_progress(title)
 
     def _on_populate_error(self, error: Exception):
         self.is_populating = False
         message = str(error)
 
         if isinstance(error, ConnectionError):
-            if not self.fetch_attempted:
-                self._update_toast("A ConnectionError has occurred. Check your Internet connection or if the "
-                                   "Worldometer website is up.",
-                                   5)
-                run_in_thread(self._populate_data,
-                              on_finish=self._on_populate_finished,
-                              on_error=self._on_populate_error)
-                self.fetch_attempted = True
+            self._update_toast("A ConnectionError has occurred. Check your Internet connection or if the "
+                               "Worldometer website is up.",
+                               5)
+            self.start_populate()
+
+        elif isinstance(error, HTTPError):
+            self._update_toast(message, 5)
+            self.start_populate()
 
         else:
             self._update_progress(evaluate_title(app.get_settings()))
