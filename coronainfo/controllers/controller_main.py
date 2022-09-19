@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 from gi.repository import GObject, Gio, Gtk
+from requests import ConnectionError
 
 from coronainfo import app
 from coronainfo.enums import App, Date, Paths
@@ -93,9 +94,13 @@ class MainController(GObject.Object):
         self._update_toast(message, 3)
 
     def _on_task_error(self, error: Exception):
-        logging.debug(f"On task error: {type(error)}: {error}")
         self.is_populating = False
-        self.emit(self.ERROR_OCCURRED, str(error))
+        message = str(error)
+
+        if isinstance(error, ConnectionError):
+            message = "Check your Internet connection or if the Worldometer website is up."
+
+        self.emit(self.ERROR_OCCURRED, message)
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
