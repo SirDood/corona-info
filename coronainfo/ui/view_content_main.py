@@ -1,6 +1,7 @@
 from gi.repository import Adw, GObject, Gio, Gtk
 
 from coronainfo.controllers import AppController
+from coronainfo.utils.ui_helpers import create_action, log_action_call
 
 
 @Gtk.Template(resource_path="/com.izzthedude.CoronaInfo/ui/main-content-view")
@@ -25,7 +26,10 @@ class MainContentView(Gtk.Box):
         self.controller.connect(self.controller.ERROR_OCCURRED, self.on_error_message)
         self.controller.set_table(self.table)
 
+        create_action(window, "toggle-search", self.on_toggle_search_action)
+
     def on_toggle_search_action(self, action: Gio.SimpleAction, param):
+        log_action_call(action)
         mode = self.searchbar.get_search_mode()
         self.searchbar.set_search_mode(not mode)
 

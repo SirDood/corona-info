@@ -64,7 +64,6 @@ class MainWindow(Adw.ApplicationWindow):
         create_action(self, "refresh-data", self.on_refresh_action, ["<Ctrl>r"])
         create_action(self, "save-data", self.on_save_action, ["<Ctrl>s"])
         create_action(self, "preferences", self.on_preferences_action, ["<Ctrl>comma"])
-        create_action(self, "toggle-search", self.main_content.on_toggle_search_action)
 
         if os.environ.get("CORONAINFO_DEBUG"):
             create_action(self, "debug", self._on_debug_action, ["<Ctrl>d"])
