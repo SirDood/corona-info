@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 import os
 
 from gi.repository import Adw, GObject, Gio, Gtk
@@ -69,7 +68,6 @@ class MainWindow(Adw.ApplicationWindow):
 
         if os.environ.get("CORONAINFO_DEBUG"):
             create_action(self, "debug", self._on_debug_action, ["<Ctrl>d"])
-            logging.debug("Debug action created.")
 
         self.controller.start_populate()
 
@@ -91,8 +89,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.toast_overlay.add_toast(toast)
 
     def on_error_message(self, controller, message: str):
-        # TODO: maybe do this in MainContentView instead and access statuspage there
-        logging.debug(f"Error message: {message}")
         self.spinner_box.set_visible(False)
 
     def on_refresh_action(self, action: Gio.SimpleAction, param):
@@ -117,7 +113,7 @@ class MainWindow(Adw.ApplicationWindow):
         preferences.show()
 
     def _on_debug_action(self, action: Gio.SimpleAction, param):
-        logging.debug(f"Debug action activated")
+        log_action_call(action)
 
     def _init_settings(self):
         settings = app.get_schema()
