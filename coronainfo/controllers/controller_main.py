@@ -36,27 +36,18 @@ class MainController(GObject.Object):
     def start_populate(self):
         run_in_thread(self._populate_data,
                       on_finish=self._on_populate_finished,
-                      on_error=self._on_task_error)
+                      on_error=self._on_populate_error)
 
     def on_refresh(self):
         if not self.is_populating:
             self.model.clear()
             run_in_thread(self._populate_data, (False,),
                           on_finish=self._on_populate_finished,
-                          on_error=self._on_task_error)
+                          on_error=self._on_populate_error)
         else:
             message = "Refresh in progress!"
             logging.warning(message)
             self._update_toast(message, 2)
-
-    def _on_populate_finished(self):
-        self.is_populating = False
-        self.emit(self.POPULATE_FINISHED)
-        logging.info("Data population finished")
-
-        # Update title
-        display = evaluate_title(app.get_settings())
-        self._update_progress(display)
 
     def on_save(self, dialog: Gtk.FileChooserNative):
         name = App.NAME.replace(' ', '')
@@ -67,6 +58,87 @@ class MainController(GObject.Object):
         dialog.set_current_folder(downloads_dir)
         dialog.connect("response", self._on_save_response)
         dialog.show()
+
+    def set_table(self, table: Gtk.TreeView):
+        self.table = table
+
+        # Set columns
+        for i, header in enumerate(CoronaHeaders.as_tuple()):
+            title = header.replace("_", " ").replace("PER", "/").title()
+            renderer = Gtk.CellRendererText()
+            renderer.set_property("height", 30)
+
+            column = Gtk.TreeViewColumn(title, renderer, text=i)
+            column.set_cell_data_func(renderer, self._cell_data_func, func_data=i)
+            column.set_alignment(0.5)
+            column.set_sort_column_id(i)
+            column.set_expand(True)
+            self._bind_column_settings(column)
+
+            self.table.append_column(column)
+
+    def set_filter(self, text: str):
+        if self.table:
+            self.country_filter = text
+            model_filter: Gtk.TreeModelFilter = self.model.filter_new()
+            model_filter.set_visible_func(self._visible_func)
+            model_proxy: Gtk.TreeModelSort = Gtk.TreeModelSort.new_with_model(model_filter)
+            self.table.set_model(model_proxy)
+
+            if len(model_proxy) == 0:
+                self.emit(self.MODEL_EMPTY)
+
+    def _populate_data(self, use_cache: bool = True):
+        self.emit(self.POPULATE_STARTED)
+        self.is_populating = True
+        logging.info("Data population started")
+
+        self.table.set_model(None)
+        for row in self._get_data(use_cache=use_cache):
+            self.model.append(row)
+        self.set_filter(self.country_filter)
+
+    def _get_data(self, use_cache: bool = True):
+        cache_file = Paths.CACHE_JSON
+
+        if not cache_file.exists() or not use_cache:
+            message = "Fetching data..."
+            self._update_progress(message)
+            logging.info(message)
+            dataset = fetch_data()
+            logging.debug(f"Caching data at {cache_file}")
+            write_json(cache_file, dataset)
+
+            # Update last_fetched settings
+            today = datetime.now().strftime(Date.RAW_FORMAT)
+            logging.debug(f"Updating last_fetched: {today}")
+            settings = app.get_settings()
+            settings.last_fetched = today
+
+        message = "Reading data..."
+        self._update_progress(message)
+        logging.info(message)
+        json_data = get_json(cache_file)
+        result = map(lambda row: CoronaData(**row), json_data)
+        return result
+
+    def _on_populate_finished(self):
+        self.is_populating = False
+        self.emit(self.POPULATE_FINISHED)
+        logging.info("Data population finished")
+
+        # Update title
+        display = evaluate_title(app.get_settings())
+        self._update_progress(display)
+
+    def _on_populate_error(self, error: Exception):
+        self.is_populating = False
+        message = str(error)
+
+        if isinstance(error, ConnectionError):
+            message = "Check your Internet connection or if the Worldometer website is up."
+
+        self.emit(self.ERROR_OCCURRED, message)
 
     def _on_save_response(self, dialog: Gtk.FileChooserNative, response: int):
         logging.debug(f"Response type: {Gtk.ResponseType(response).value_name}")
@@ -92,33 +164,6 @@ class MainController(GObject.Object):
         message = f"Successfully saved data to {destination}"
         logging.info(message)
         self._update_toast(message, 3)
-
-    def _on_task_error(self, error: Exception):
-        self.is_populating = False
-        message = str(error)
-
-        if isinstance(error, ConnectionError):
-            message = "Check your Internet connection or if the Worldometer website is up."
-
-        self.emit(self.ERROR_OCCURRED, message)
-
-    def set_table(self, table: Gtk.TreeView):
-        self.table = table
-
-        # Set columns
-        for i, header in enumerate(CoronaHeaders.as_tuple()):
-            title = header.replace("_", " ").replace("PER", "/").title()
-            renderer = Gtk.CellRendererText()
-            renderer.set_property("height", 30)
-
-            column = Gtk.TreeViewColumn(title, renderer, text=i)
-            column.set_cell_data_func(renderer, self._cell_data_func, func_data=i)
-            column.set_alignment(0.5)
-            column.set_sort_column_id(i)
-            column.set_expand(True)
-            self._bind_column_settings(column)
-
-            self.table.append_column(column)
 
     def _cell_data_func(self, column: Gtk.TreeViewColumn,
                         renderer: Gtk.CellRendererText,
@@ -161,17 +206,6 @@ class MainController(GObject.Object):
                 colour = red
             renderer.set_property("foreground", colour)
 
-    def set_filter(self, text: str):
-        if self.table:
-            self.country_filter = text
-            model_filter: Gtk.TreeModelFilter = self.model.filter_new()
-            model_filter.set_visible_func(self._visible_func)
-            model_proxy: Gtk.TreeModelSort = Gtk.TreeModelSort.new_with_model(model_filter)
-            self.table.set_model(model_proxy)
-
-            if len(model_proxy) == 0:
-                self.emit(self.MODEL_EMPTY)
-
     def _visible_func(self, model: Gtk.ListStore, tree_iter: Gtk.TreeIter, data):
         if not self.country_filter:
             return True
@@ -185,40 +219,6 @@ class MainController(GObject.Object):
 
     def _update_toast(self, message: str, timeout: int):
         self.emit(self.TOAST_MESSAGE, message, timeout)
-
-    def _populate_data(self, use_cache: bool = True):
-        self.emit(self.POPULATE_STARTED)
-        self.is_populating = True
-        logging.info("Data population started")
-
-        self.table.set_model(None)
-        for row in self._get_data(use_cache=use_cache):
-            self.model.append(row)
-        self.set_filter(self.country_filter)
-
-    def _get_data(self, use_cache: bool = True):
-        cache_file = Paths.CACHE_JSON
-
-        if not cache_file.exists() or not use_cache:
-            message = "Fetching data..."
-            self._update_progress(message)
-            logging.info(message)
-            dataset = fetch_data()
-            logging.debug(f"Caching data at {cache_file}")
-            write_json(cache_file, dataset)
-
-            # Update last_fetched settings
-            today = datetime.now().strftime(Date.RAW_FORMAT)
-            logging.debug(f"Updating last_fetched: {today}")
-            settings = app.get_settings()
-            settings.last_fetched = today
-
-        message = "Reading data..."
-        self._update_progress(message)
-        logging.info(message)
-        json_data = get_json(cache_file)
-        result = map(lambda row: CoronaData(**row), json_data)
-        return result
 
     def _setup_signals(self):
         create_signal(self, self.POPULATE_STARTED)
