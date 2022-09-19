@@ -51,7 +51,7 @@ class CoronaInfoApp(Adw.Application):
         return cls._schema
 
     @classmethod
-    def get_settings(cls) -> Gio.Settings:
+    def get_settings(cls) -> AppSettings:
         return cls._settings
 
     def on_activate(self, app):

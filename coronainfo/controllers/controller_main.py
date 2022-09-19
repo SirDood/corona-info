@@ -32,6 +32,7 @@ class MainController(GObject.Object):
         self.set_filter(self.country_filter)
 
         self.is_populating = False
+        self.fetch_attempted = False
 
     def start_populate(self):
         run_in_thread(self._populate_data,
@@ -39,6 +40,7 @@ class MainController(GObject.Object):
                       on_error=self._on_populate_error)
 
     def on_refresh(self):
+        self.fetch_attempted = False
         if not self.is_populating:
             self.model.clear()
             run_in_thread(self._populate_data, (False,),
@@ -136,9 +138,18 @@ class MainController(GObject.Object):
         message = str(error)
 
         if isinstance(error, ConnectionError):
-            message = "Check your Internet connection or if the Worldometer website is up."
+            if not self.fetch_attempted:
+                self._update_toast("A ConnectionError has occurred. Check your Internet connection or if the "
+                                   "Worldometer website is up.",
+                                   5)
+                run_in_thread(self._populate_data,
+                              on_finish=self._on_populate_finished,
+                              on_error=self._on_populate_error)
+                self.fetch_attempted = True
 
-        self.emit(self.ERROR_OCCURRED, message)
+        else:
+            self._update_progress(evaluate_title(app.get_settings()))
+            self.emit(self.ERROR_OCCURRED, message)
 
     def _on_save_response(self, dialog: Gtk.FileChooserNative, response: int):
         logging.debug(f"Response type: {Gtk.ResponseType(response).value_name}")
@@ -163,7 +174,7 @@ class MainController(GObject.Object):
     def _on_save_finished(self, destination: str):
         message = f"Successfully saved data to {destination}"
         logging.info(message)
-        self._update_toast(message, 3)
+        self._update_toast(message, 5)
 
     def _cell_data_func(self, column: Gtk.TreeViewColumn,
                         renderer: Gtk.CellRendererText,
