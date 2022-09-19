@@ -34,16 +34,17 @@ class MainController(GObject.Object):
         self.is_populating = False
 
     def start_populate(self):
-        run_in_thread(self._populate_data,
-                      on_finish=self._on_populate_finished,
-                      on_error=self._on_populate_error)
+        self.emit(self.POPULATE_STARTED)
+        run_in_thread(self._get_data,
+                      on_finish=self._populate_data,
+                      on_error=self._on_get_data_error)
 
     def on_refresh(self):
         if not self.is_populating:
-            self.model.clear()
-            run_in_thread(self._populate_data, (False,),
-                          on_finish=self._on_populate_finished,
-                          on_error=self._on_populate_error)
+            self.emit(self.POPULATE_STARTED)
+            run_in_thread(self._get_data, (False,),
+                          on_finish=self._populate_data,
+                          on_error=self._on_get_data_error)
         else:
             message = "Refresh in progress!"
             logging.warning(message)
@@ -88,17 +89,9 @@ class MainController(GObject.Object):
             if len(model_proxy) == 0:
                 self.emit(self.MODEL_EMPTY)
 
-    def _populate_data(self, use_cache: bool = True):
-        self.emit(self.POPULATE_STARTED)
+    def _get_data(self, use_cache: bool = True):
         self.is_populating = True
         logging.info("Data population started")
-
-        self.table.set_model(None)
-        for row in self._get_data(use_cache=use_cache):
-            self.model.append(row)
-        self.set_filter(self.country_filter)
-
-    def _get_data(self, use_cache: bool = True):
         cache_file = Paths.CACHE_JSON
 
         if not cache_file.exists() or not use_cache:
@@ -122,6 +115,30 @@ class MainController(GObject.Object):
         result = map(lambda row: CoronaData(**row), json_data)
         return result
 
+    def _on_get_data_error(self, error: Exception):
+        message = str(error)
+        self._on_populate_finished()
+
+        if isinstance(error, ConnectionError):
+            message = "A ConnectionError has occurred. Check your Internet connection or if the Worldometer website is up."
+            self._update_toast(message, 5)
+
+        elif isinstance(error, HTTPError):
+            self._update_toast(message, 5)
+
+        else:
+            self.emit(self.ERROR_OCCURRED, message)
+
+    def _populate_data(self, dataset: list[CoronaData]):
+        self.table.set_model(None)
+        self.model.clear()
+
+        for row in dataset:
+            self.model.append(row)
+        self.set_filter(self.country_filter)
+
+        self._on_populate_finished()
+
     def _on_populate_finished(self):
         self.is_populating = False
         self.emit(self.POPULATE_FINISHED)
@@ -130,24 +147,6 @@ class MainController(GObject.Object):
         # Update title
         title = evaluate_title(app.get_settings())
         self._update_progress(title)
-
-    def _on_populate_error(self, error: Exception):
-        self.is_populating = False
-        message = str(error)
-
-        if isinstance(error, ConnectionError):
-            self._update_toast("A ConnectionError has occurred. Check your Internet connection or if the "
-                               "Worldometer website is up.",
-                               5)
-            self.start_populate()
-
-        elif isinstance(error, HTTPError):
-            self._update_toast(message, 5)
-            self.start_populate()
-
-        else:
-            self._update_progress(evaluate_title(app.get_settings()))
-            self.emit(self.ERROR_OCCURRED, message)
 
     def _on_save_response(self, dialog: Gtk.FileChooserNative, response: int):
         logging.debug(f"Response type: {Gtk.ResponseType(response).value_name}")

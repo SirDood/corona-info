@@ -72,7 +72,7 @@ def run_in_thread(func: Callable, func_args: tuple = (),
         logging.debug(f"Running on_finish: {on_finish_name}{on_finish_args}")
 
         try:
-            on_finish(*on_finish_args)
+            on_finish(*on_finish_args, result)
         except Exception as err:
             logging.error(f"An error has occurred while running '{on_finish_name}' in thread:", exc_info=True)
 
