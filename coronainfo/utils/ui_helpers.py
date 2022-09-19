@@ -94,7 +94,7 @@ class TaskManager(GObject.Object):
                 func(*func_args, result, **func_kwargs)
 
         except Exception as err:
-            logging.error(f"An error has occurred while running '{func_name}' in thread:", exc_info=True)
+            logging.error(f"An error has occurred while running '{func_name}':", exc_info=True)
 
     def _setup_signals(self):
         create_signal(self, self.STARTED)
