@@ -159,9 +159,11 @@ class MainController(GObject.Object):
 
     def _save_file(self, destination: str):
         logging.info(f"Saving data to {destination}")
+
         try:
             cache = get_json(Paths.CACHE_JSON)
             write_json(destination, cache)
+
         except Exception as err:
             logging.error("An error has occurred while trying to read from cache while saving:", exc_info=True)
             self._update_toast(

@@ -72,7 +72,11 @@ def run_in_thread(func: Callable, func_args: tuple = (),
         logging.debug(f"Running on_finish: {on_finish_name}{on_finish_args}")
 
         try:
-            on_finish(*on_finish_args, result)
+            if result is None:
+                on_finish(*on_finish_args)
+            else:
+                on_finish(*on_finish_args, result)
+
         except Exception as err:
             logging.error(f"An error has occurred while running '{on_finish_name}' in thread:", exc_info=True)
 
@@ -94,7 +98,8 @@ def run_in_thread(func: Callable, func_args: tuple = (),
     return task
 
 
-def create_action(self: Union[Gtk.Application, Gtk.ApplicationWindow], name: str, callback: Callable, shortcuts: list = None):
+def create_action(self: Union[Gtk.Application, Gtk.ApplicationWindow], name: str, callback: Callable,
+                  shortcuts: list = None):
     action = Gio.SimpleAction.new(name, None)
     action.connect("activate", callback)
     self.add_action(action)
