@@ -19,6 +19,7 @@ import logging
 import sys
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gio, Adw
@@ -27,7 +28,7 @@ from gi.repository import Gio, Adw
 from coronainfo import _logger  # Unused but is necessary to initialise the logger
 from coronainfo.enums import App
 from coronainfo.settings import AppSettings
-from coronainfo.views import MainWindow, AboutDialog
+from coronainfo.ui import MainWindow, AboutDialog
 from coronainfo.utils.ui_helpers import create_action, log_action_call
 
 
@@ -50,7 +51,7 @@ class CoronaInfoApp(Adw.Application):
         return cls._schema
 
     @classmethod
-    def get_settings(cls) -> Gio.Settings:
+    def get_settings(cls) -> AppSettings:
         return cls._settings
 
     def on_activate(self, app):
@@ -77,14 +78,10 @@ class CoronaInfoApp(Adw.Application):
         self.quit()
 
 
-def get_schema() -> Gio.Settings:
-    return CoronaInfoApp.get_schema()
+get_schema = CoronaInfoApp.get_schema
+get_settings = CoronaInfoApp.get_settings
 
 
-def get_settings() -> AppSettings:
-    return CoronaInfoApp.get_settings()
-
-
-def main(version):
+def main():
     app = CoronaInfoApp()
     return app.run(sys.argv)

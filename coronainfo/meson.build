@@ -1,14 +1,5 @@
 pkgdatadir = join_paths(get_option('prefix'), get_option('datadir'), meson.project_name())
 moduledir = join_paths(pkgdatadir, 'coronainfo')
-gnome = import('gnome')
-
-gnome.compile_resources(
-  'coronainfo',
-  'coronainfo.gresource.xml',
-  gresource_bundle: true,
-  install: true,
-  install_dir: pkgdatadir,
-)
 
 python = import('python')
 
@@ -36,6 +27,6 @@ coronainfo_sources = [
 
 install_subdir('utils', install_dir: moduledir)
 install_subdir('models', install_dir: moduledir)
-install_subdir('views', install_dir: moduledir)
+install_subdir('ui', install_dir: moduledir)
 install_subdir('controllers', install_dir: moduledir)
 install_data(coronainfo_sources, install_dir: moduledir)

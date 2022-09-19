@@ -1,3 +1,5 @@
+gnome = import('gnome')
+
 desktop_file = i18n.merge_file(
   input: 'com.izzthedude.CoronaInfo.desktop.in',
   output: 'com.izzthedude.CoronaInfo.desktop',
@@ -39,5 +41,13 @@ if compile_schemas.found()
     args: ['--strict', '--dry-run', meson.current_source_dir()]
   )
 endif
+
+gnome.compile_resources(
+  'coronainfo',
+  'com.izzthedude.CoronaInfo.gresource.xml',
+  gresource_bundle: true,
+  install: true,
+  install_dir: join_paths(get_option('prefix'), get_option('datadir'), meson.project_name()),
+)
 
 subdir('icons')

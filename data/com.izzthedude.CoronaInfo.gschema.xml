@@ -2,57 +2,57 @@
 <schemalist gettext-domain="coronainfo">
   <schema id="com.izzthedude.CoronaInfo" path="/com/izzthedude/CoronaInfo/">
     <!--  Window stuff  -->
-	  <key name="window-width" type="i">
-	    <default>1200</default>
-	  </key>
-	  <key name="window-height" type="i">
-	    <default>800</default>
-	  </key>
-	  <key name="window-maximized" type="b">
-	    <default>false</default>
-	  </key>
+    <key name="window-width" type="i">
+      <default>1200</default>
+    </key>
+    <key name="window-height" type="i">
+      <default>800</default>
+    </key>
+    <key name="window-maximized" type="b">
+      <default>false</default>
+    </key>
     <!--  Columns  -->
     <key name="column-country-visible" type="b">
-			<default>true</default>
-		</key>
+      <default>true</default>
+    </key>
     <key name="column-total-cases-visible" type="b">
-			<default>true</default>
-		</key>
+      <default>true</default>
+    </key>
     <key name="column-new-cases-visible" type="b">
-			<default>true</default>
-		</key>
+      <default>true</default>
+    </key>
     <key name="column-total-deaths-visible" type="b">
-			<default>true</default>
-		</key>
+      <default>true</default>
+    </key>
     <key name="column-new-deaths-visible" type="b">
-			<default>true</default>
-		</key>
+      <default>true</default>
+    </key>
     <key name="column-total-recovered-visible" type="b">
-			<default>false</default>
-		</key>
+      <default>false</default>
+    </key>
     <key name="column-new-recovered-visible" type="b">
-			<default>true</default>
-		</key>
+      <default>true</default>
+    </key>
     <key name="column-active-cases-visible" type="b">
-			<default>true</default>
-		</key>
+      <default>true</default>
+    </key>
     <key name="column-serious-cases-visible" type="b">
-			<default>false</default>
-		</key>
+      <default>false</default>
+    </key>
     <key name="column-total-cases-per-1m-visible" type="b">
-			<default>false</default>
-		</key>
+      <default>false</default>
+    </key>
     <key name="column-deaths-per-1m-visible" type="b">
-			<default>false</default>
-		</key>
+      <default>false</default>
+    </key>
     <key name="column-total-tests-visible" type="b">
-			<default>false</default>
-		</key>
+      <default>false</default>
+    </key>
     <key name="column-tests-per-1m-visible" type="b">
-			<default>false</default>
-		</key>
+      <default>false</default>
+    </key>
     <key name="column-population-visible" type="b">
-			<default>false</default>
-		</key>
+      <default>false</default>
+    </key>
   </schema>
 </schemalist>

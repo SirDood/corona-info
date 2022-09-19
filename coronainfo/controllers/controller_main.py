@@ -1,15 +1,14 @@
 import logging
 from datetime import datetime
 
-from bs4 import BeautifulSoup, Tag
-from gi.repository import GLib, GObject, Gio, Gtk
+from gi.repository import GObject, Gio, Gtk
+from requests import ConnectionError, HTTPError
 
 from coronainfo import app
 from coronainfo.enums import App, Date, Paths
-from coronainfo.models import CoronaData, CoronaHeaders
 from coronainfo.utils.files import get_json, write_json
-from coronainfo.utils.functions import convert_to_num
-from coronainfo.utils.ui_helpers import run_in_thread, evaluate_title
+from coronainfo.utils.ui_helpers import TaskManager, create_signal, evaluate_title
+from coronainfo.utils.worldometer import CoronaData, CoronaHeaders, fetch_data
 
 
 class MainController(GObject.Object):
@@ -18,6 +17,7 @@ class MainController(GObject.Object):
     PROGRESS_MESSAGE = "absurd-frosted"
     MODEL_EMPTY = "vintage-next"
     TOAST_MESSAGE = "untwist-unicycle"
+    ERROR_OCCURRED = "enforcer-pope"
 
     def __init__(self):
         super().__init__()
@@ -25,7 +25,7 @@ class MainController(GObject.Object):
 
         self.table: Gtk.TreeView = None
 
-        field_types = tuple(field.type for field in CoronaData.get_fields())
+        field_types = CoronaData.field_types()
         logging.debug(f"Model field types: {field_types}")
         self.model = Gtk.ListStore(*field_types)
         self.country_filter = ""
@@ -34,95 +34,33 @@ class MainController(GObject.Object):
         self.is_populating = False
 
     def start_populate(self):
-        run_in_thread(self._populate_data, self.on_populate_finished)
-
-    def on_populate_finished(self):
-        self.is_populating = False
-        self.emit(self.POPULATE_FINISHED)
-        logging.info("Data population finished")
-
-        # Update title
-        display = evaluate_title(app.get_settings())
-        self.update_progress(display)
+        self.emit(self.POPULATE_STARTED)
+        task = TaskManager(self._get_data)
+        task.set_on_finish(self._populate_data)
+        task.set_on_error(self._on_get_data_error)
+        task.start()
 
     def on_refresh(self):
         if not self.is_populating:
-            self.model.clear()
-            run_in_thread(self._populate_data, self.on_populate_finished, func_args=(False,))
+            self.emit(self.POPULATE_STARTED)
+            task = TaskManager(self._get_data, False)
+            task.set_on_finish(self._populate_data)
+            task.set_on_error(self._on_get_data_error)
+            task.start()
         else:
             message = "Refresh in progress!"
             logging.warning(message)
-            self.emit(self.TOAST_MESSAGE, message, 2)
+            self._update_toast(message, 2)
 
-    def on_save(self, window: Gtk.ApplicationWindow):
-        self._dialog = Gtk.FileChooserNative(
-            title="Save File as",
-            transient_for=window,
-            action=Gtk.FileChooserAction.SAVE,
-            accept_label="_Save",
-            cancel_label="_Cancel"
-        )
-
+    def on_save(self, dialog: Gtk.FileChooserNative):
         name = App.NAME.replace(' ', '')
         date = datetime.fromisoformat(app.get_settings().last_fetched).date()
         file_name = f"{name}_{date}.json"
         downloads_dir = Gio.File.new_for_path(str(Paths.DOWNLOADS_DIR))
-        self._dialog.set_current_name(file_name)
-        self._dialog.set_current_folder(downloads_dir)
-        self._dialog.connect("response", self.on_save_response)
-        self._dialog.show()
-
-    def on_save_response(self, dialog: Gtk.FileChooserNative, response: int):
-        logging.debug(f"Response type: {Gtk.ResponseType(response).value_name}")
-        if response == Gtk.ResponseType.ACCEPT:
-            dest_file: Gio.File = dialog.get_file()
-            logging.info(f"Saving data to {dest_file.get_path()}")
-            try:
-                src_file: Gio.File = Gio.File.new_for_path(str(Paths.CACHE_JSON))
-                logging.debug(f"Attempting to read file: {src_file.get_path()}")
-                src_file.load_contents_async(None, self.on_read_cache_complete, dest_file)
-
-            except GLib.Error as err:
-                logging.error("An error has occurred while trying to read from cache while saving:", exc_info=True)
-                self.emit(
-                    self.TOAST_MESSAGE,
-                    f"An error has occurred while attempting to save data. Refer the logs at {Paths.LOGS_DIR}",
-                    0)
-
-        self._dialog.destroy()
-
-    def on_read_cache_complete(self, file: Gio.File, result: Gio.AsyncResult, dest_file: Gio.File):
-        try:
-            contents = file.load_contents_finish(result)[1]
-            contents_bytes = GLib.Bytes.new(contents)
-            logging.debug(f"Attempting to write to file: {dest_file.get_path()}")
-            dest_file.replace_contents_bytes_async(
-                contents_bytes,
-                None,
-                False,
-                Gio.FileCreateFlags.NONE,
-                None,
-                self.on_write_file_complete
-            )
-
-        except GLib.Error as err:
-            logging.error("An error has occurred while trying to write data:", exc_info=True)
-            self.emit(
-                self.TOAST_MESSAGE,
-                f"An error has occurred while attempting to save data. Refer the logs at {Paths.LOGS_DIR}",
-                0)
-
-    def on_write_file_complete(self, file: Gio.File, result: Gio.AsyncResult):
-        result = file.replace_contents_finish(result)
-        path = file.get_path()
-
-        if not result:
-            logging.warning(f"Unable to save data to {path}")
-            return
-
-        message = f"Successfully saved data to {path}"
-        logging.info(message)
-        self.emit(self.TOAST_MESSAGE, message, 2)
+        dialog.set_current_name(file_name)
+        dialog.set_current_folder(downloads_dir)
+        dialog.connect("response", self._on_save_response)
+        dialog.show()
 
     def set_table(self, table: Gtk.TreeView):
         self.table = table
@@ -134,7 +72,7 @@ class MainController(GObject.Object):
             renderer.set_property("height", 30)
 
             column = Gtk.TreeViewColumn(title, renderer, text=i)
-            column.set_cell_data_func(renderer, self.cell_data_func, func_data=i)
+            column.set_cell_data_func(renderer, self._cell_data_func, func_data=i)
             column.set_alignment(0.5)
             column.set_sort_column_id(i)
             column.set_expand(True)
@@ -142,21 +80,117 @@ class MainController(GObject.Object):
 
             self.table.append_column(column)
 
-    def cell_data_func(self, column: Gtk.TreeViewColumn,
-                       renderer: Gtk.CellRendererText,
-                       model: Gtk.TreeModelSort,
-                       tree_iter: Gtk.TreeIter,
-                       data):  # column number
+    def set_filter(self, text: str):
+        if self.table:
+            self.country_filter = text
+            model_filter: Gtk.TreeModelFilter = self.model.filter_new()
+            model_filter.set_visible_func(self._visible_func)
+            model_proxy: Gtk.TreeModelSort = Gtk.TreeModelSort.new_with_model(model_filter)
+            self.table.set_model(model_proxy)
+
+            if len(model_proxy) == 0:
+                self.emit(self.MODEL_EMPTY)
+
+    def _get_data(self, use_cache: bool = True):
+        self.is_populating = True
+        logging.info("Data population started")
+        cache_file = Paths.CACHE_JSON
+
+        if not cache_file.exists() or not use_cache:
+            message = "Fetching data..."
+            self._update_progress(message)
+            logging.info(message)
+            dataset = fetch_data()
+            logging.debug(f"Caching data at {cache_file}")
+            write_json(cache_file, dataset)
+
+            # Update last_fetched settings
+            today = datetime.now().strftime(Date.RAW_FORMAT)
+            logging.debug(f"Updating last_fetched: {today}")
+            settings = app.get_settings()
+            settings.last_fetched = today
+
+        message = "Reading data..."
+        self._update_progress(message)
+        logging.info(message)
+        json_data = get_json(cache_file)
+        result = map(lambda row: CoronaData(**row), json_data)
+        return result
+
+    def _on_get_data_error(self, error: Exception):
+        message = str(error)
+        self._on_populate_finished()
+
+        if isinstance(error, ConnectionError):
+            message = "A ConnectionError has occurred. Check your Internet connection or if the Worldometer website is up."
+            self._update_toast(message, 5)
+
+        elif isinstance(error, HTTPError):
+            self._update_toast(message, 5)
+
+        else:
+            self.emit(self.ERROR_OCCURRED, message)
+
+    def _populate_data(self, dataset: list[CoronaData]):
+        self.table.set_model(None)
+        self.model.clear()
+
+        for row in dataset:
+            self.model.append(row)
+        self.set_filter(self.country_filter)
+
+        self._on_populate_finished()
+
+    def _on_populate_finished(self):
+        self.is_populating = False
+        self.emit(self.POPULATE_FINISHED)
+        logging.info("Data population finished")
+
+        # Update title
+        title = evaluate_title(app.get_settings())
+        self._update_progress(title)
+
+    def _on_save_response(self, dialog: Gtk.FileChooserNative, response: int):
+        logging.debug(f"Response type: {Gtk.ResponseType(response).value_name}")
+        if response == Gtk.ResponseType.ACCEPT:
+            dest_path = dialog.get_file().get_path()
+            task = TaskManager(self._save_file, dest_path)
+            task.set_on_finish(self._on_save_finished, dest_path)
+            task.set_on_error(self._on_save_error, dest_path)
+            task.start()
+
+        dialog.destroy()
+
+    def _save_file(self, destination: str):
+        logging.info(f"Saving data to {destination}")
+        cache = get_json(Paths.CACHE_JSON)
+        write_json(destination, cache)
+
+    def _on_save_finished(self, destination: str):
+        message = f"Successfully saved data to {destination}"
+        logging.info(message)
+        self._update_toast(message, 5)
+
+    def _on_save_error(self, destination: str, error: Exception):
+        logging.warning(f"An error has occurred while attempting to save data:", exc_info=True)
+        self._update_toast(f"A(n) {type(error).__name__} has occurred. Could not save data to {destination}", 5)
+
+    def _cell_data_func(self, column: Gtk.TreeViewColumn,
+                        renderer: Gtk.CellRendererText,
+                        model: Gtk.TreeModelSort,
+                        tree_iter: Gtk.TreeIter,
+                        data):  # column number
 
         value = model.get(tree_iter, data)[0]
         if isinstance(value, int):
-            display = f"{value:,}"
-
-            if "NEW" in CoronaHeaders.as_tuple()[data]:
-                prefix = ""
-                if value >= 0:
-                    prefix = "+"
-                display = prefix + display
+            display = ""
+            if value:
+                display = f"{value:,}"
+                if "NEW" in CoronaHeaders.as_tuple()[data] and value > 0:
+                    prefix = ""
+                    if value >= 0:
+                        prefix = "+"
+                    display = prefix + display
 
             renderer.set_property("text", display)
 
@@ -182,151 +216,27 @@ class MainController(GObject.Object):
                 colour = red
             renderer.set_property("foreground", colour)
 
-    def set_filter(self, text: str):
-        if self.table:
-            self.country_filter = text
-            model_filter: Gtk.TreeModelFilter = self.model.filter_new()
-            model_filter.set_visible_func(self.visible_func)
-            model_proxy: Gtk.TreeModelSort = Gtk.TreeModelSort.new_with_model(model_filter)
-            self.table.set_model(model_proxy)
-
-            if len(model_proxy) == 0:
-                self.emit(self.MODEL_EMPTY)
-
-    def visible_func(self, model: Gtk.ListStore, tree_iter: Gtk.TreeIter, data):
+    def _visible_func(self, model: Gtk.ListStore, tree_iter: Gtk.TreeIter, data):
         if not self.country_filter:
             return True
 
         country = model[tree_iter][int(CoronaHeaders.COUNTRY)]
         return self.country_filter.lower() in country.lower()
 
-    def update_progress(self, message: str):
+    def _update_progress(self, message: str):
         # TODO: look into fixing the 'Trying to snapshot XXX without a current allocation' error
         self.emit(self.PROGRESS_MESSAGE, message)
 
-    def _populate_data(self, use_cache: bool = True):
-        self.emit(self.POPULATE_STARTED)
-        self.is_populating = True
-        logging.info("Data population started")
-
-        self.table.set_model(None)
-        for row in self._get_data(use_cache=use_cache):
-            self.model.append(row)
-        self.set_filter(self.country_filter)
-
-    def _get_data(self, use_cache: bool = True):
-        cache_file = Paths.CACHE_JSON
-
-        if not cache_file.exists() or not use_cache:
-            message = "Fetching data..."
-            self.update_progress(message)
-            logging.info(message)
-            dataset = self._fetch_data()
-            logging.debug(f"Caching data at {cache_file}")
-            write_json(cache_file, [row.as_dict() for row in dataset])
-
-            # Update last_fetched settings
-            today = datetime.now().strftime(Date.RAW_FORMAT)
-            logging.debug(f"Updating last_fetched: {today}")
-            settings = app.get_settings()
-            settings.last_fetched = today
-
-        message = "Reading data..."
-        self.update_progress(message)
-        logging.info(message)
-        json_data = get_json(cache_file)
-        result = map(lambda row: CoronaData(**row), json_data)
-        return result
-
-    def _fetch_data(self) -> map:
-        fetch_url: Gio.File = Gio.File.new_for_uri("https://www.worldometers.info/coronavirus/")
-        try:
-            success, content, etag = fetch_url.load_contents(None)
-
-            # Parse html content and find the table for today
-            logging.info("Parsing fetched data...")
-            soup = BeautifulSoup(content, "html.parser")
-            table = soup.find(id="main_table_countries_today")
-            table_body = table.find("tbody")
-
-            message = "Parsing table HTML..."
-            self.update_progress(message)
-            logging.info(message)
-            result = self._parse_table_html(table_body)
-            return result
-
-        except GLib.Error as err:
-            logging.error("An error has occurred while fetching data:", exc_info=True)
-            self.emit(
-                self.TOAST_MESSAGE,
-                f"An error has occurred while fetching data. Refer the logs at {Paths.LOGS_DIR}",
-                0)
-
-    def _parse_table_html(self, table: Tag) -> map:
-        countries: list[Tag] = table.find_all("tr")[7:]
-        result = map(lambda country: sanitise_row(country), countries)
-
-        def sanitise_row(clean_row: Tag):
-            row_data = clean_row.find_all("td")[1:15]
-            sanitised_row = map(lambda value: sanitise_value(value.text), row_data)
-            clean_row = CoronaData(*sanitised_row)
-
-            return clean_row
-
-        def sanitise_value(value: str):
-            sanitised_value = value.replace(",", "").strip()
-
-            if sanitised_value == "N/A":
-                sanitised_value = None
-
-            clean_value = convert_to_num(sanitised_value)
-            if isinstance(clean_value, float):
-                clean_value = int(clean_value)
-
-            return clean_value
-
-        return result
+    def _update_toast(self, message: str, timeout: int):
+        self.emit(self.TOAST_MESSAGE, message, timeout)
 
     def _setup_signals(self):
-        GObject.signal_new(
-            self.POPULATE_STARTED,  # Signal message
-            self,  # A Python GObject instance or type that the signal is associated with
-            GObject.SignalFlags.RUN_LAST,  # Signal flags
-            GObject.TYPE_BOOLEAN,  # Return type of the signal handler
-            []  # Parameter types
-        )
-
-        GObject.signal_new(
-            self.POPULATE_FINISHED,
-            self,
-            GObject.SignalFlags.RUN_LAST,
-            GObject.TYPE_BOOLEAN,
-            []
-        )
-
-        GObject.signal_new(
-            self.PROGRESS_MESSAGE,
-            self,
-            GObject.SignalFlags.RUN_LAST,
-            GObject.TYPE_BOOLEAN,
-            [str]
-        )
-
-        GObject.signal_new(
-            self.MODEL_EMPTY,
-            self,
-            GObject.SignalFlags.RUN_LAST,
-            GObject.TYPE_BOOLEAN,
-            []
-        )
-
-        GObject.signal_new(
-            self.TOAST_MESSAGE,
-            self,
-            GObject.SignalFlags.RUN_LAST,
-            GObject.TYPE_BOOLEAN,
-            [str, int]
-        )
+        create_signal(self, self.POPULATE_STARTED)
+        create_signal(self, self.POPULATE_FINISHED)
+        create_signal(self, self.PROGRESS_MESSAGE, [str])
+        create_signal(self, self.MODEL_EMPTY)
+        create_signal(self, self.TOAST_MESSAGE, [str, int])
+        create_signal(self, self.ERROR_OCCURRED, [str])
 
     def _bind_column_settings(self, column: Gtk.TreeViewColumn):
         title = column.get_title()

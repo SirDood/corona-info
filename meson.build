@@ -1,5 +1,5 @@
 project('coronainfo',
-          version: '0.3.0',
+          version: '0.3.1-dev',
     meson_version: '>= 0.59.0',
   default_options: [ 'warning_level=2',
                      'werror=false',
@@ -9,8 +9,6 @@ project('coronainfo',
 i18n = import('i18n')
 
 gnome = import('gnome')
-
-
 
 subdir('data')
 subdir('coronainfo')

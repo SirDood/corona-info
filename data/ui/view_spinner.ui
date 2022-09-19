@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="GtkBox" id="spinner_box">
+    <property name="hexpand">true</property>
+    <property name="vexpand">true</property>
+    <property name="valign">center</property>
+    <property name="halign">center</property>
+    <child>
+      <object class="GtkSpinner" id="spinner">
+        <property name="width-request">40</property>
+        <property name="height-request">40</property>
+        <property name="spinning">true</property>
+      </object>
+    </child>
+  </object>
+</interface>

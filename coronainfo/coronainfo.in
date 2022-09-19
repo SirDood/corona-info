@@ -41,5 +41,4 @@ if __name__ == '__main__':
     resource._register()
 
     from coronainfo import app
-    from coronainfo.enums import App
-    sys.exit(app.main(App.VERSION))
+    sys.exit(app.main())

@@ -4,19 +4,22 @@ import subprocess
 import sys
 from pathlib import Path
 
-SOURCE_DIR = Path(__file__).parent / "coronainfo"
-GRESOURCE_XML = SOURCE_DIR / "coronainfo.gresource.xml"
-GRESOURCE_BIN = SOURCE_DIR / "resources" / "gresource"
+PROJECT_ROOT = Path(__file__).parent
+SOURCE_DIR = PROJECT_ROOT / "coronainfo"
+DATA_DIR = PROJECT_ROOT / "data"
 
-GSCHEMA_SRC = Path(__file__).parent / "data"
+GRESOURCE_XML = DATA_DIR / "com.izzthedude.CoronaInfo.gresource.xml"
+GRESOURCE_BIN = DATA_DIR / "gresource"
+
+GSCHEMA_SRC = Path(DATA_DIR)
 GSCHEMA_DEST = Path.home() / ".local" / "share" / "glib-2.0" / "schemas"
 GSCHEMA_DEST.mkdir(parents=True, exist_ok=True)
 
-SCICONS_SRC = SOURCE_DIR.parent / "data" / "icons" / "hicolor" / "scalable" / "apps"
+SCICONS_SRC = DATA_DIR / "icons" / "hicolor" / "scalable" / "apps"
 SCICONS_DEST = Path.home() / ".icons" / "hicolor" / "scalable" / "apps"
 SCICONS_DEST.mkdir(parents=True, exist_ok=True)
 
-SYICONS_SRC = SOURCE_DIR.parent / "data" / "icons" / "hicolor" / "symbolic" / "apps"
+SYICONS_SRC = DATA_DIR / "icons" / "hicolor" / "symbolic" / "apps"
 SYICONS_DEST = Path.home() / ".icons" / "hicolor" / "symbolic" / "apps"
 SYICONS_DEST.mkdir(parents=True, exist_ok=True)
 
@@ -34,8 +37,6 @@ def install_icons(source: Path, destination: Path):
 
 
 def main():
-    from gi.repository import Gio
-
     # Set environment variable(s)
     os.environ["CORONAINFO_DEBUG"] = "1"
 
@@ -43,7 +44,7 @@ def main():
     print("Compiling resources... ", end="")
     command = [
         "glib-compile-resources",
-        f"--sourcedir={SOURCE_DIR}",
+        f"--sourcedir={DATA_DIR}",
         f"--target={GRESOURCE_BIN}",
         GRESOURCE_XML
     ]
@@ -64,13 +65,13 @@ def main():
     installed_icons = install_icons(SCICONS_SRC, SCICONS_DEST) + install_icons(SYICONS_SRC, SYICONS_DEST)
 
     # Load resources
+    from gi.repository import Gio
     resource = Gio.Resource.load(str(GRESOURCE_BIN))
     resource._register()
 
     # Run app
     from coronainfo import app
-    from coronainfo.enums import App
-    code = app.main(App.VERSION)
+    code = app.main()
 
     # Delete icons after app quits
     for icon in installed_icons:
