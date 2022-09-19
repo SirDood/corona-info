@@ -1,3 +1,4 @@
+import json
 import re
 from dataclasses import asdict, astuple, dataclass, fields
 from enum import Enum, auto
@@ -79,11 +80,19 @@ class CoronaHeaders(Enum):
 
 
 def fetch_data() -> list[dict]:
-    url = "https://www.worldometers.info/coronavirus/"
-    req = requests.get(url)
-    soup = BeautifulSoup(req.text, "html.parser")
+    content = ""
+    try:  # check for dummy API first
+        req = requests.get("http://127.0.0.1:8000/coronainfo")
+        req.raise_for_status()
+        content = json.loads(req.text)["html"]
+
+    except requests.ConnectionError as err:
+        req = requests.get("https://www.worldometers.info/coronavirus/")
+        req.raise_for_status()
+        content = req.text
 
     # Find the 'today' table
+    soup = BeautifulSoup(content, "html.parser")
     table = soup.find(id="main_table_countries_today")
     table_body = table.find("tbody")
     parsed_table = list(asdict(country) for country in _parse_table_html(table_body))
@@ -138,3 +147,7 @@ def convert_to_num(text: str) -> Union[int, float, str]:
 def is_float(text: str) -> bool:
     match = re.match(r"^\d*\.\d*$", text.strip())
     return bool(match)
+
+
+if __name__ == '__main__':
+    fetch_data()
