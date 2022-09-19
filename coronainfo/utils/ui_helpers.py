@@ -24,18 +24,38 @@ class TaskManager(GObject.Object):
         self._args = args
         self._kwargs = kwargs
 
+        self._on_finish = None
+        self._on_finish_args = None
+        self._on_finish_kwargs = None
+
+        self._on_error = None
+        self._on_error_args = None
+        self._on_error_kwargs = None
+
         self._source = None
         self._cancellable = None
+
+    def start(self):
+        task: Gio.Task = Gio.Task.new(self._source, self._cancellable, self._ready_wrapper, None)
+        if self._on_finish: self.connect(self.FINISHED, self._on_finish_wrapper)
+        if self._on_error: self.connect(self.ERROR, self._on_finish_wrapper)
+        task.run_in_thread(self._func_wrapper)
+
+    def set_on_finish(self, func: Callable, *args, **kwargs):
+        self._on_finish = func
+        self._on_finish_args = args
+        self._on_finish_kwargs = kwargs
+
+    def set_on_error(self, func: Callable, *args, **kwargs):
+        self._on_error = func
+        self._on_error_args = args
+        self._on_error_kwargs = kwargs
 
     def set_source(self, source: Any):
         self._source = source
 
     def set_cancellable(self, cancellable: Gio.Cancellable):
         self._cancellable = cancellable
-
-    def start(self):
-        task: Gio.Task = Gio.Task.new(self._source, self._cancellable, self._ready_wrapper, None)
-        task.run_in_thread(self._func_wrapper)
 
     def _func_wrapper(self, task: Gio.Task, source, data, cancellable: Gio.Cancellable):
         func_name = self._func.__name__
@@ -58,44 +78,28 @@ class TaskManager(GObject.Object):
 
         self.emit(self.FINISHED, result)
 
+    def _on_finish_wrapper(self, taskmanager, result):
+        # Determine if self._on_finish or self._on_error should run
+        is_error = isinstance(result, Exception)
+        func = self._on_finish if not is_error else self._on_error
+        func_args = self._on_finish_args if not is_error else self._on_error_args
+        func_kwargs = self._on_finish_kwargs if not is_error else self._on_error_kwargs
+        func_name = func.__name__
+
+        logging.debug(f"Worker running on finished function: {func_name}{func_args}{func_kwargs}")
+        try:
+            if result is None:
+                func(*func_args, **func_kwargs)
+            else:
+                func(*func_args, result, **func_kwargs)
+
+        except Exception as err:
+            logging.error(f"An error has occurred while running '{func_name}' in thread:", exc_info=True)
+
     def _setup_signals(self):
         create_signal(self, self.STARTED)
         create_signal(self, self.FINISHED, [object])
         create_signal(self, self.ERROR, [object])  # param_type is Exception
-
-
-def run_in_thread(func: Callable, func_args: tuple = (),
-                  on_finish: Callable = None, on_finish_args: tuple = (),
-                  on_error: Callable = None, on_error_args: tuple = ()) -> TaskManager:
-    def on_finish_wrapper(task: TaskManager, result):
-        on_finish_name = on_finish.__name__
-        logging.debug(f"Running on_finish: {on_finish_name}{on_finish_args}")
-
-        try:
-            if result is None:
-                on_finish(*on_finish_args)
-            else:
-                on_finish(*on_finish_args, result)
-
-        except Exception as err:
-            logging.error(f"An error has occurred while running '{on_finish_name}' in thread:", exc_info=True)
-
-    def on_error_wrapper(task: TaskManager, error: Exception):
-        on_error_name = on_error.__name__
-        logging.debug(f"Running on_error: {on_error_name}{on_finish_args}")
-
-        try:
-            on_error(*on_error_args, error)
-        except Exception as err:
-            logging.error(f"An error has occurred while running '{on_error_name}' in thread:", exc_info=True)
-
-    task = TaskManager(func, *func_args)
-    if on_finish: task.connect(task.FINISHED, on_finish_wrapper)
-    if on_error: task.connect(task.ERROR, on_error_wrapper)
-
-    task.start()
-
-    return task
 
 
 def create_action(self: Union[Gtk.Application, Gtk.ApplicationWindow], name: str, callback: Callable,

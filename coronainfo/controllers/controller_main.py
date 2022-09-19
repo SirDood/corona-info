@@ -7,7 +7,7 @@ from requests import ConnectionError, HTTPError
 from coronainfo import app
 from coronainfo.enums import App, Date, Paths
 from coronainfo.utils.files import get_json, write_json
-from coronainfo.utils.ui_helpers import create_signal, evaluate_title, run_in_thread
+from coronainfo.utils.ui_helpers import TaskManager, create_signal, evaluate_title
 from coronainfo.utils.worldometer import CoronaData, CoronaHeaders, fetch_data
 
 
@@ -35,16 +35,18 @@ class MainController(GObject.Object):
 
     def start_populate(self):
         self.emit(self.POPULATE_STARTED)
-        run_in_thread(self._get_data,
-                      on_finish=self._populate_data,
-                      on_error=self._on_get_data_error)
+        task = TaskManager(self._get_data)
+        task.set_on_finish(self._populate_data)
+        task.set_on_error(self._on_get_data_error)
+        task.start()
 
     def on_refresh(self):
         if not self.is_populating:
             self.emit(self.POPULATE_STARTED)
-            run_in_thread(self._get_data, (False,),
-                          on_finish=self._populate_data,
-                          on_error=self._on_get_data_error)
+            task = TaskManager(self._get_data, False)
+            task.set_on_finish(self._populate_data)
+            task.set_on_error(self._on_get_data_error)
+            task.start()
         else:
             message = "Refresh in progress!"
             logging.warning(message)
@@ -152,8 +154,9 @@ class MainController(GObject.Object):
         logging.debug(f"Response type: {Gtk.ResponseType(response).value_name}")
         if response == Gtk.ResponseType.ACCEPT:
             dest_path = dialog.get_file().get_path()
-            run_in_thread(self._save_file, (dest_path,),
-                          on_finish=self._on_save_finished, on_finish_args=(dest_path,))
+            task = TaskManager(self._save_file, dest_path)
+            task.set_on_finish(self._on_save_finished, dest_path)
+            task.start()
 
         dialog.destroy()
 
